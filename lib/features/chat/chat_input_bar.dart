@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'chat_providers.dart';
 
-/// The bottom input bar for typing and sending messages or stopping generation.
+/// Minimal, centered input bar for drafting messages (max-width 780px).
 class ChatInputBar extends ConsumerStatefulWidget {
   const ChatInputBar({
     super.key,
@@ -56,128 +56,167 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isStreaming = ref.watch(isStreamingProvider);
     final stats = ref.watch(streamingStatsProvider);
+    final selectedModel = ref.watch(selectedModelProvider);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Streaming stats indicator bar
-          if (isStreaming && stats != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Generating: ${stats.tokensPerSec.toStringAsFixed(1)} tok/s · ${stats.totalTokens} tokens',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+      color: Colors.transparent,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 780),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Message text input
-              Expanded(
-                child: KeyboardListener(
-                  focusNode: FocusNode(),
-                  onKeyEvent: (event) {
-                    if (event is KeyDownEvent &&
-                        event.logicalKey == LogicalKeyboardKey.enter &&
-                        !HardwareKeyboard.instance.isShiftPressed) {
-                      if (!isStreaming && _canSend) {
-                        _handleSend();
-                      }
-                    }
-                  },
-                  child: TextField(
-                    controller: _textController,
-                    focusNode: _focusNode,
-                    minLines: 1,
-                    maxLines: 6,
-                    textInputAction: TextInputAction.newline,
-                    style: const TextStyle(fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: isStreaming
-                          ? 'Model is replying...'
-                          : 'Message Ollama (Enter to send, Shift+Enter for new line)...',
-                      hintStyle: TextStyle(
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                        fontSize: 14,
+              // Streaming status
+              if (isStreaming && stats != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      const SizedBox(
+                        width: 8,
+                        height: 8,
+                        child: CircularProgressIndicator(strokeWidth: 1.5),
                       ),
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerHighest,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                      const SizedBox(width: 8),
+                      Text(
+                        'Generating · ${stats.tokensPerSec.toStringAsFixed(1)} tok/s (${stats.totalTokens} tokens)',
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                          color: colorScheme.primary,
+                        ),
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
+                    ],
+                  ),
+                ),
+
+              // Input Container
+              Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.6),
+                    width: 0.8,
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(14, 10, 8, 8),
+                child: Column(
+                  children: [
+                    KeyboardListener(
+                      focusNode: FocusNode(),
+                      onKeyEvent: (event) {
+                        if (event is KeyDownEvent &&
+                            event.logicalKey == LogicalKeyboardKey.enter &&
+                            !HardwareKeyboard.instance.isShiftPressed) {
+                          if (!isStreaming && _canSend) {
+                            _handleSend();
+                          }
+                        }
+                      },
+                      child: TextField(
+                        controller: _textController,
+                        focusNode: _focusNode,
+                        minLines: 1,
+                        maxLines: 7,
+                        style: const TextStyle(fontSize: 13.5, height: 1.5),
+                        decoration: InputDecoration(
+                          hintText: isStreaming
+                              ? 'Model is replying...'
+                              : 'Ask $selectedModel...',
+                          hintStyle: TextStyle(
+                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                            fontSize: 13.5,
+                          ),
+                          filled: false,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                        ),
                       ),
                     ),
-                  ),
+
+                    const SizedBox(height: 8),
+
+                    // Bottom Controls Row
+                    Row(
+                      children: [
+                        Text(
+                          '↵ send · ⇧↵ newline',
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 10.5,
+                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                          ),
+                        ),
+
+                        const Spacer(),
+
+                        if (isStreaming)
+                          InkWell(
+                            borderRadius: BorderRadius.circular(6),
+                            onTap: widget.onStop,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: colorScheme.error.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: colorScheme.error.withValues(alpha: 0.4),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.stop_rounded, size: 13, color: colorScheme.error),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Stop',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: colorScheme.error,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          IconButton(
+                            icon: Icon(
+                              Icons.arrow_upward_rounded,
+                              size: 16,
+                              color: _canSend
+                                  ? colorScheme.onPrimary
+                                  : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                            ),
+                            style: IconButton.styleFrom(
+                              backgroundColor: _canSend
+                                  ? colorScheme.primary
+                                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                              minimumSize: const Size(28, 28),
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            ),
+                            onPressed: _canSend ? _handleSend : null,
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-
-              const SizedBox(width: 10),
-
-              // Action button: Stop or Send
-              if (isStreaming)
-                IconButton.filled(
-                  icon: const Icon(Icons.stop_rounded),
-                  tooltip: 'Stop generation',
-                  style: IconButton.styleFrom(
-                    backgroundColor: colorScheme.error,
-                    foregroundColor: colorScheme.onError,
-                    padding: const EdgeInsets.all(12),
-                  ),
-                  onPressed: widget.onStop,
-                )
-              else
-                IconButton.filled(
-                  icon: const Icon(Icons.arrow_upward_rounded),
-                  tooltip: 'Send message',
-                  style: IconButton.styleFrom(
-                    backgroundColor: _canSend
-                        ? colorScheme.primary
-                        : colorScheme.surfaceContainerHighest,
-                    foregroundColor: _canSend
-                        ? colorScheme.onPrimary
-                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                    padding: const EdgeInsets.all(12),
-                  ),
-                  onPressed: _canSend ? _handleSend : null,
-                ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

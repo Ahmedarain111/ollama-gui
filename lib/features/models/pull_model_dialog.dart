@@ -25,7 +25,6 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
     'qwen2.5:7b',
     'qwen2.5:3b',
     'deepseek-r1:7b',
-    'phi4-mini',
     'mistral',
     'nomic-embed-text',
   ];
@@ -42,7 +41,7 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
 
     setState(() {
       _isPulling = true;
-      _status = 'Starting pull...';
+      _status = 'Initiating download...';
       _progress = null;
       _errorMessage = null;
     });
@@ -67,8 +66,8 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Successfully pulled $modelName!'),
-            backgroundColor: const Color(0xFF22C55E),
+            content: Text('Downloaded $modelName'),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -88,55 +87,71 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
     final colorScheme = theme.colorScheme;
 
     return AlertDialog(
-      title: const Text('Pull Model from Ollama'),
+      title: const Text('Pull Model', style: TextStyle(fontSize: 15)),
       content: SizedBox(
-        width: 440,
+        width: 420,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Enter a model name or tag from the Ollama library:',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
             TextField(
               controller: _controller,
               enabled: !_isPulling,
-              decoration: InputDecoration(
+              autofocus: true,
+              style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+              decoration: const InputDecoration(
                 hintText: 'e.g. llama3.2:3b, qwen2.5:7b',
-                prefixIcon: const Icon(Icons.download_rounded),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                prefixIcon: Icon(Icons.download_rounded, size: 16),
               ),
               onSubmitted: (_) => _isPulling ? null : _startPull(),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Popular models:',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            const SizedBox(height: 14),
+            Text(
+              'Suggestions',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Wrap(
               spacing: 6,
-              runSpacing: 6,
+              runSpacing: 4,
               children: _popularModels.map((m) {
-                return ActionChip(
-                  label: Text(m, style: const TextStyle(fontSize: 11)),
-                  onPressed: _isPulling
-                      ? null
-                      : () {
-                          _controller.text = m;
-                        },
+                return InkWell(
+                  borderRadius: BorderRadius.circular(4),
+                  onTap: _isPulling ? null : () => _controller.text = m,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: colorScheme.outline.withValues(alpha: 0.4),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      m,
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                 );
               }).toList(),
             ),
             if (_isPulling) ...[
-              const SizedBox(height: 20),
-              LinearProgressIndicator(
-                value: _progress,
-                borderRadius: BorderRadius.circular(4),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: _progress,
+                  minHeight: 3,
+                ),
               ),
               const SizedBox(height: 8),
               Row(
@@ -146,7 +161,7 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
                     child: Text(
                       _status ?? 'Downloading...',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: colorScheme.onSurfaceVariant,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -156,7 +171,8 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
                     Text(
                       '${(_progress! * 100).toStringAsFixed(1)}%',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontFamily: 'monospace',
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: colorScheme.primary,
                       ),
@@ -168,10 +184,7 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
               const SizedBox(height: 12),
               Text(
                 _errorMessage!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colorScheme.error,
-                ),
+                style: TextStyle(fontSize: 11.5, color: colorScheme.error),
               ),
             ],
           ],
@@ -182,10 +195,9 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
           onPressed: _isPulling ? null : () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        FilledButton.icon(
-          icon: const Icon(Icons.download_rounded, size: 18),
-          label: Text(_isPulling ? 'Pulling...' : 'Pull Model'),
+        FilledButton(
           onPressed: _isPulling ? null : _startPull,
+          child: Text(_isPulling ? 'Downloading...' : 'Download'),
         ),
       ],
     );

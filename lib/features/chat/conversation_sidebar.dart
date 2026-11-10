@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:intl/intl.dart';
 
 import '../../database/database.dart';
 import '../../database/database_provider.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'chat_providers.dart';
 
-/// Left sidebar showing the list of conversations.
+/// Minimalist, high-density conversation sidebar (220px).
 class ConversationSidebar extends ConsumerStatefulWidget {
   const ConversationSidebar({super.key});
 
@@ -21,7 +22,6 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
   @override
   void initState() {
     super.initState();
-    // Listen for new chat triggers from the welcome card
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.listenManual(newChatTriggerProvider, (prev, next) {
         if (next > 0) _showNewChatDialog();
@@ -31,50 +31,115 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final convAsync = ref.watch(conversationsStreamProvider);
     final activeId = ref.watch(activeConversationProvider);
 
-    return Column(
-      children: [
-        // Header
-        _SidebarHeader(onNewChat: _showNewChatDialog),
-        const Divider(height: 1),
-        // Conversation list
-        Expanded(
-          child: convAsync.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
-            error: (e, _) =>
-                Center(child: Text('Error: $e')),
-            data: (conversations) {
-              if (conversations.isEmpty) {
-                return const EmptyState(
-                  icon: Icons.chat_bubble_outline,
-                  title: 'No conversations yet',
-                  subtitle: 'Start a new chat!',
-                );
-              }
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: conversations.length,
-                itemBuilder: (ctx, i) {
-                  final conv = conversations[i];
-                  return _ConversationTile(
-                    conversation: conv,
-                    isSelected: conv.id == activeId,
-                    onTap: () {
-                      ref.read(activeConversationProvider.notifier).state =
-                          conv.id;
-                      context.go('/chat?id=${conv.id}');
-                    },
-                    onDelete: () => _deleteConversation(conv),
-                  );
-                },
-              );
-            },
-          ),
+    return Container(
+      width: 220,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          right: BorderSide(color: theme.dividerTheme.color ?? colorScheme.outlineVariant),
         ),
-      ],
+      ),
+      child: Column(
+        children: [
+          // New Chat Action Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(6),
+              onTap: _showNewChatDialog,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.4),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.add_rounded,
+                      size: 15,
+                      color: colorScheme.onSurface,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'New chat',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'Ctrl N',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Conversation List
+          Expanded(
+            child: convAsync.when(
+              loading: () => const Center(
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 1.5),
+                ),
+              ),
+              error: (e, _) => Center(
+                child: Text(
+                  'Error loading chats',
+                  style: TextStyle(fontSize: 11, color: colorScheme.error),
+                ),
+              ),
+              data: (conversations) {
+                if (conversations.isEmpty) {
+                  return const EmptyState(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    title: 'No conversations',
+                    subtitle: 'Press "New chat" to begin.',
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  itemCount: conversations.length,
+                  itemBuilder: (ctx, i) {
+                    final conv = conversations[i];
+                    return _ConversationRow(
+                      conversation: conv,
+                      isSelected: conv.id == activeId,
+                      onTap: () {
+                        ref.read(activeConversationProvider.notifier).state = conv.id;
+                        context.go('/chat?id=${conv.id}');
+                      },
+                      onDelete: () => _deleteConversation(conv),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -96,7 +161,9 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete conversation?'),
         content: Text(
-            'This will permanently delete "${conv.title}" and all its messages.'),
+          'Delete "${conv.title}" and its messages permanently.',
+          style: const TextStyle(fontSize: 13),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -112,6 +179,7 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
         ],
       ),
     );
+
     if (confirm == true) {
       await ref.read(appDatabaseProvider).deleteConversation(conv.id);
       if (ref.read(activeConversationProvider) == conv.id) {
@@ -121,43 +189,8 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Header
-// ---------------------------------------------------------------------------
-
-class _SidebarHeader extends StatelessWidget {
-  const _SidebarHeader({required this.onNewChat});
-
-  final VoidCallback onNewChat;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          Text(
-            'Chats',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'New Chat',
-            onPressed: onNewChat,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Conversation tile
-// ---------------------------------------------------------------------------
-
-class _ConversationTile extends StatefulWidget {
-  const _ConversationTile({
+class _ConversationRow extends StatefulWidget {
+  const _ConversationRow({
     required this.conversation,
     required this.isSelected,
     required this.onTap,
@@ -170,89 +203,98 @@ class _ConversationTile extends StatefulWidget {
   final VoidCallback onDelete;
 
   @override
-  State<_ConversationTile> createState() => _ConversationTileState();
+  State<_ConversationRow> createState() => _ConversationRowState();
 }
 
-class _ConversationTileState extends State<_ConversationTile> {
+class _ConversationRowState extends State<_ConversationRow> {
   bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final isActive = widget.isSelected;
+    final rowBg = isActive
+        ? colorScheme.surfaceContainerHighest
+        : _hovered
+            ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.4)
+            : Colors.transparent;
+
+    final shortModel = widget.conversation.model.split(':').first;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
-        onSecondaryTapUp: (_) => widget.onDelete(),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        onTap: widget.onTap,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
           decoration: BoxDecoration(
-            color: widget.isSelected
-                ? colorScheme.primary.withValues(alpha: 0.12)
-                : _hovered
-                    ? colorScheme.onSurface.withValues(alpha: 0.05)
-                    : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            title: Text(
-              widget.conversation.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodyMedium?.copyWith(
-                fontWeight: widget.isSelected
-                    ? FontWeight.w600
-                    : FontWeight.normal,
-                color: widget.isSelected
-                    ? colorScheme.primary
-                    : null,
-              ),
-            ),
-            subtitle: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _relativeTime(widget.conversation.updatedAt),
-                    style: textTheme.bodySmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    widget.conversation.model.split(':').first,
-                    style: textTheme.labelSmall?.copyWith(
-                      color: colorScheme.primary,
-                    ),
-                    maxLines: 1,
-                  ),
-                ),
-              ],
-            ),
-            onTap: widget.onTap,
-            trailing: _hovered
-                ? IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 16),
-                    onPressed: widget.onDelete,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                        minWidth: 28, minHeight: 28),
+            color: rowBg,
+            borderRadius: BorderRadius.circular(6),
+            border: isActive
+                ? Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.6),
+                    width: 0.8,
                   )
                 : null,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.conversation.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                        color: isActive
+                            ? colorScheme.onSurface
+                            : colorScheme.onSurface.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Text(
+                          shortModel,
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 10,
+                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '· ${_relativeTime(widget.conversation.updatedAt)}',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              if (_hovered || isActive)
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 13),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                  tooltip: 'Delete',
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  hoverColor: colorScheme.error.withValues(alpha: 0.15),
+                  onPressed: widget.onDelete,
+                ),
+            ],
           ),
         ),
       ),
@@ -260,31 +302,28 @@ class _ConversationTileState extends State<_ConversationTile> {
   }
 
   String _relativeTime(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return '${dt.month}/${dt.day}/${dt.year}';
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    if (diff.inDays < 7) return '${diff.inDays}d';
+    return DateFormat.MMMd().format(dt);
   }
 }
-
-// ---------------------------------------------------------------------------
-// New Chat Dialog
-// ---------------------------------------------------------------------------
 
 class _NewChatDialog extends ConsumerStatefulWidget {
   const _NewChatDialog({required this.onCreated});
 
-  final void Function(int convId) onCreated;
+  final ValueChanged<int> onCreated;
 
   @override
   ConsumerState<_NewChatDialog> createState() => _NewChatDialogState();
 }
 
 class _NewChatDialogState extends ConsumerState<_NewChatDialog> {
-  String? _selectedModel;
   final _titleController = TextEditingController(text: 'New Chat');
+  String? _selectedModel;
 
   @override
   void dispose() {
@@ -297,39 +336,41 @@ class _NewChatDialogState extends ConsumerState<_NewChatDialog> {
     final modelsAsync = ref.watch(installedModelsProvider);
 
     return AlertDialog(
-      title: const Text('New Chat'),
+      title: const Text('New Conversation'),
       content: SizedBox(
-        width: 360,
+        width: 320,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: _titleController,
+              autofocus: true,
+              style: const TextStyle(fontSize: 13),
               decoration: const InputDecoration(
-                labelText: 'Chat title',
-                hintText: 'New Chat',
+                labelText: 'Conversation Title',
               ),
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Model',
-              style: Theme.of(context).textTheme.labelMedium,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             modelsAsync.when(
               loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text('Failed to load models: $e'),
+              error: (e, _) => Text('Error: $e', style: const TextStyle(fontSize: 12)),
               data: (models) {
                 if (models.isEmpty) {
                   return const Text(
-                    'No models installed. Pull one from the Models screen.',
+                    'No models installed. Go to Models tab to pull one.',
+                    style: TextStyle(fontSize: 12),
                   );
                 }
                 _selectedModel ??= models.first.name;
                 return DropdownButtonFormField<String>(
                   initialValue: _selectedModel,
-                  decoration: const InputDecoration(),
+                  style: const TextStyle(fontSize: 13),
                   items: models
                       .map(
                         (m) => DropdownMenuItem(

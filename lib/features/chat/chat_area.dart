@@ -22,7 +22,6 @@ class ChatArea extends ConsumerWidget {
       children: [
         // Toolbar
         ChatToolbar(conversationId: conversationId),
-        const Divider(height: 1),
         // Message list
         Expanded(
           child: ChatMessageList(conversationId: conversationId),

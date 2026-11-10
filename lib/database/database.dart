@@ -145,4 +145,9 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteMessage(int id) {
     return (delete(messages)..where((t) => t.id.equals(id))).go();
   }
+
+  /// Deletes all messages for a specific conversation.
+  Future<void> deleteMessagesForConversation(int convId) {
+    return (delete(messages)..where((t) => t.conversationId.equals(convId))).go();
+  }
 }

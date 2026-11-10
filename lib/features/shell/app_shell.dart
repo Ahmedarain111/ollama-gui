@@ -22,11 +22,6 @@ class AppShell extends StatelessWidget {
             onDestinationSelected: (index) =>
                 _navigate(context, index),
           ),
-          VerticalDivider(
-            width: 1,
-            thickness: 1,
-            color: Theme.of(context).dividerColor,
-          ),
           Expanded(child: child),
         ],
       ),

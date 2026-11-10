@@ -7,6 +7,7 @@ import 'model_card.dart';
 import 'models_providers.dart';
 import 'pull_model_dialog.dart';
 
+/// Minimalist local models inventory.
 class ModelsScreen extends ConsumerWidget {
   const ModelsScreen({super.key});
 
@@ -29,28 +30,38 @@ class ModelsScreen extends ConsumerWidget {
         title: const Text('Local Models'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refresh models',
-            onPressed: () {
-              ref.read(modelsNotifierProvider.notifier).refresh();
-            },
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            tooltip: 'Refresh',
+            onPressed: () => ref.read(modelsNotifierProvider.notifier).refresh(),
           ),
-          const SizedBox(width: 8),
-          FilledButton.icon(
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Pull Model'),
-            onPressed: () => _openPullDialog(context),
+          const SizedBox(width: 4),
+          Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: FilledButton.tonalIcon(
+              icon: const Icon(Icons.add_rounded, size: 16),
+              label: const Text('Pull model', style: TextStyle(fontSize: 12.5)),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              ),
+              onPressed: () => _openPullDialog(context),
+            ),
           ),
-          const SizedBox(width: 16),
         ],
       ),
       body: modelsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
         error: (err, _) => EmptyState(
-          icon: Icons.error_outline,
-          title: 'Unable to connect to Ollama',
+          icon: Icons.error_outline_rounded,
+          title: 'Connection error',
           subtitle: err.toString(),
-          action: FilledButton(
+          action: FilledButton.tonal(
             onPressed: () => ref.read(modelsNotifierProvider.notifier).refresh(),
             child: const Text('Retry'),
           ),
@@ -58,66 +69,67 @@ class ModelsScreen extends ConsumerWidget {
         data: (models) {
           if (models.isEmpty) {
             return EmptyState(
-              icon: Icons.storage_outlined,
-              title: 'No models installed yet',
-              subtitle: 'Pull models like llama3.2, qwen2.5, or mistral to get started.',
-              action: FilledButton.icon(
-                icon: const Icon(Icons.download_rounded),
-                label: const Text('Pull your first model'),
+              icon: Icons.layers_outlined,
+              title: 'No models installed',
+              subtitle: 'Pull models from the Ollama library to get started.',
+              action: FilledButton(
                 onPressed: () => _openPullDialog(context),
+                child: const Text('Pull a model'),
               ),
             );
           }
 
           return Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: CustomScrollView(
               slivers: [
-                // Running in VRAM section
+                // VRAM status strip
                 runningAsync.when(
                   data: (running) {
                     if (running.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
                     return SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 24),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: colorScheme.primary.withValues(alpha: 0.3),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surface,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: colorScheme.outline.withValues(alpha: 0.5),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF10B981),
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.memory, size: 18, color: Color(0xFF22C55E)),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Loaded in VRAM / Memory (${running.length})',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                ],
+                            const SizedBox(width: 8),
+                            Text(
+                              'Loaded in VRAM: ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurface,
                               ),
-                              const SizedBox(height: 10),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: running.map((rm) {
-                                  return Chip(
-                                    avatar: const Icon(Icons.circle, size: 10, color: Color(0xFF22C55E)),
-                                    label: Text(
-                                      '${rm.name} (${(rm.vramSize / 1e9).toStringAsFixed(1)} GB VRAM)',
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  );
-                                }).toList(),
+                            ),
+                            Expanded(
+                              child: Text(
+                                running.map((m) => '${m.name} (${(m.vramSize / 1e9).toStringAsFixed(1)} GB)').join(', '),
+                                style: TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 11.5,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -126,13 +138,13 @@ class ModelsScreen extends ConsumerWidget {
                   error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
                 ),
 
-                // Installed models grid
+                // Grid of models
                 SliverGrid(
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 400,
-                    mainAxisExtent: 180,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
+                    maxCrossAxisExtent: 380,
+                    mainAxisExtent: 145,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => ModelCard(model: models[index]),
