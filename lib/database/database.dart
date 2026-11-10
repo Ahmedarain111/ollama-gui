@@ -95,6 +95,30 @@ class AppDatabase extends _$AppDatabase {
     return (delete(conversations)..where((t) => t.id.equals(id))).go();
   }
 
+  /// Gets a single conversation by its id.
+  Future<Conversation?> getConversation(int id) {
+    return (select(conversations)..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  /// Watches a single conversation by its id.
+  Stream<Conversation?> watchConversation(int id) {
+    return (select(conversations)..where((t) => t.id.equals(id))).watchSingleOrNull();
+  }
+
+  /// Updates system prompt and/or parameter preset for a conversation.
+  Future<void> updateConversationParameters(
+    int id, {
+    Value<String?> systemPrompt = const Value.absent(),
+    Value<String?> paramPreset = const Value.absent(),
+  }) {
+    return (update(conversations)..where((t) => t.id.equals(id))).write(
+      ConversationsCompanion(
+        systemPrompt: systemPrompt,
+        paramPreset: paramPreset,
+      ),
+    );
+  }
+
   // -------------------------------------------------------------------------
   // Messages
   // -------------------------------------------------------------------------

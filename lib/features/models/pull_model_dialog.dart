@@ -6,18 +6,26 @@ import '../../core/providers.dart';
 import 'models_providers.dart';
 
 class PullModelDialog extends ConsumerStatefulWidget {
-  const PullModelDialog({super.key});
+  const PullModelDialog({super.key, this.initialModelName});
+
+  final String? initialModelName;
 
   @override
   ConsumerState<PullModelDialog> createState() => _PullModelDialogState();
 }
 
 class _PullModelDialogState extends ConsumerState<PullModelDialog> {
-  final _controller = TextEditingController();
+  late final TextEditingController _controller;
   bool _isPulling = false;
   String? _status;
   double? _progress;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialModelName ?? '');
+  }
 
   static const _popularModels = [
     'llama3.2:3b',

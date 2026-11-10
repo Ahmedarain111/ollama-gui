@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/widgets/hover_icon_button.dart';
 import 'chat_providers.dart';
 
-/// Minimal, centered input bar for drafting messages (max-width 780px).
+/// Minimal, centered input bar for drafting messages with optional image attachments.
 class ChatInputBar extends ConsumerStatefulWidget {
   const ChatInputBar({
     super.key,
@@ -13,7 +17,7 @@ class ChatInputBar extends ConsumerStatefulWidget {
     required this.onStop,
   });
 
-  final Future<void> Function(String text) onSend;
+  final Future<void> Function(String text, List<String>? images) onSend;
   final VoidCallback onStop;
 
   @override
@@ -23,6 +27,7 @@ class ChatInputBar extends ConsumerStatefulWidget {
 class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   final _textController = TextEditingController();
   final _focusNode = FocusNode();
+  final List<String> _attachedImages = [];
   bool _canSend = false;
 
   @override
@@ -40,18 +45,66 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   }
 
   void _onTextChanged() {
-    final canSend = _textController.text.trim().isNotEmpty;
+    final canSend = _textController.text.trim().isNotEmpty || _attachedImages.isNotEmpty;
     if (canSend != _canSend) {
       setState(() => _canSend = canSend);
     }
   }
 
+  Future<void> _pickImages() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+        allowMultiple: true,
+        withData: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final newImages = <String>[];
+        for (final file in result.files) {
+          Uint8List? bytes = file.bytes;
+          if (bytes == null && file.path != null) {
+            bytes = await File(file.path!).readAsBytes();
+          }
+          if (bytes != null) {
+            newImages.add(base64Encode(bytes));
+          }
+        }
+        if (newImages.isNotEmpty) {
+          setState(() {
+            _attachedImages.addAll(newImages);
+            _canSend = true;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load image: $e')),
+        );
+      }
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _attachedImages.removeAt(index);
+      _canSend = _textController.text.trim().isNotEmpty || _attachedImages.isNotEmpty;
+    });
+  }
+
   void _handleSend() {
     final text = _textController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty && _attachedImages.isEmpty) return;
 
+    final images = List<String>.from(_attachedImages);
+    setState(() {
+      _attachedImages.clear();
+      _canSend = false;
+    });
     _textController.clear();
-    widget.onSend(text);
+    widget.onSend(text, images.isNotEmpty ? images : null);
     _focusNode.requestFocus();
   }
 
@@ -93,6 +146,56 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+
+              // Attached Images Preview Strip
+              if (_attachedImages.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  height: 64,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _attachedImages.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (ctx, i) {
+                      final bytes = base64Decode(_attachedImages[i]);
+                      return Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.memory(
+                              bytes,
+                              width: 64,
+                              height: 64,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () => _removeImage(i),
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black87,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close_rounded,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
 
@@ -149,6 +252,18 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                     // Bottom Controls Row
                     Row(
                       children: [
+                        // Image attachment button
+                        HoverIconButton(
+                          icon: Icons.image_outlined,
+                          label: 'Image',
+                          iconSize: 15,
+                          tooltip: 'Attach images (Vision models)',
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                          onTap: _pickImages,
+                        ),
+
+                        const SizedBox(width: 8),
+
                         Text(
                           '↵ send · ⇧↵ newline',
                           style: TextStyle(
@@ -220,18 +335,15 @@ class _StopButtonState extends State<_StopButton> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
           decoration: BoxDecoration(
             color: _hovered
-                ? colorScheme.error.withValues(alpha: 0.22)
+                ? colorScheme.error.withValues(alpha: 0.2)
                 : colorScheme.error.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: _hovered
-                  ? colorScheme.error.withValues(alpha: 0.75)
-                  : colorScheme.error.withValues(alpha: 0.4),
+              color: _hovered ? colorScheme.error : colorScheme.error.withValues(alpha: 0.5),
               width: 0.8,
             ),
           ),
@@ -243,8 +355,8 @@ class _StopButtonState extends State<_StopButton> {
               Text(
                 'Stop',
                 style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                   color: colorScheme.error,
                 ),
               ),
@@ -255,4 +367,3 @@ class _StopButtonState extends State<_StopButton> {
     );
   }
 }
-

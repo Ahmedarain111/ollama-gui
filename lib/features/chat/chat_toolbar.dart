@@ -1,8 +1,15 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/models.dart';
 import '../../database/database_provider.dart';
+import '../../shared/widgets/hover_icon_button.dart';
+import 'chat_media_helper.dart';
 import 'chat_providers.dart';
 
 /// Compact, minimal top toolbar for active chat (44px).
@@ -130,11 +137,27 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
 
           const SizedBox(width: 6),
 
+          // Inference Parameters & System Prompt Toggle
+          HoverIconButton(
+            icon: Icons.tune_rounded,
+            label: 'Params',
+            iconSize: 16,
+            tooltip: 'Tuning & System prompt',
+            onTap: () {
+              final current = ref.read(showParamsPanelProvider);
+              ref.read(showParamsPanelProvider.notifier).state = !current;
+            },
+          ),
+
+          const SizedBox(width: 4),
+
           // Actions Menu with text revealed on hover
           _HoverActionsMenu(
             onSelected: (val) {
               if (val == 'rename') {
                 setState(() => _editingTitle = true);
+              } else if (val == 'export') {
+                _exportMarkdown(context);
               } else if (val == 'clear') {
                 _clearMessages(context);
               }
@@ -146,6 +169,11 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
                 child: Text('Rename chat', style: TextStyle(fontSize: 12.5)),
               ),
               const PopupMenuItem(
+                value: 'export',
+                height: 32,
+                child: Text('Export as Markdown', style: TextStyle(fontSize: 12.5)),
+              ),
+              const PopupMenuItem(
                 value: 'clear',
                 height: 32,
                 child: Text('Clear history', style: TextStyle(fontSize: 12.5, color: Colors.red)),
@@ -155,6 +183,81 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportMarkdown(BuildContext context) async {
+    final db = ref.read(appDatabaseProvider);
+    final conv = await db.getConversation(widget.conversationId);
+    final msgs = await db.getMessages(widget.conversationId);
+
+    final buffer = StringBuffer();
+    final title = conv?.title ?? 'Conversation';
+    buffer.writeln('# $title\n');
+    buffer.writeln('**Model:** `${conv?.model ?? "Ollama"}`  ');
+    buffer.writeln('**Date:** ${DateFormat.yMMMd().add_jm().format(conv?.createdAt ?? DateTime.now())}  ');
+    if (conv?.systemPrompt != null && conv!.systemPrompt!.trim().isNotEmpty) {
+      buffer.writeln('\n> **System Prompt:** ${conv.systemPrompt!.trim()}\n');
+    }
+    buffer.writeln('\n---\n');
+
+    for (final m in msgs) {
+      final parsed = parseMessageContent(m.content);
+      if (m.role == 'user') {
+        buffer.writeln('### User\n');
+        if (parsed.images != null && parsed.images!.isNotEmpty) {
+          buffer.writeln('*[Attached: ${parsed.images!.length} image(s)]*\n');
+        }
+        buffer.writeln('${parsed.text}\n');
+      } else {
+        buffer.writeln('### Assistant\n');
+        buffer.writeln('${parsed.text}\n');
+        if (m.tokensPerSec != null && m.tokensPerSec! > 0) {
+          buffer.writeln('*(Speed: ${m.tokensPerSec!.toStringAsFixed(1)} tok/s · Tokens: ${m.totalTokens ?? 0})*\n');
+        }
+      }
+      buffer.writeln('---\n');
+    }
+
+    final mdContent = buffer.toString();
+    final sanitizedTitle = title
+        .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
+        .replaceAll(' ', '_')
+        .toLowerCase();
+
+    try {
+      final filePath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Export Chat as Markdown',
+        fileName: '$sanitizedTitle.md',
+        type: FileType.custom,
+        allowedExtensions: ['md'],
+      );
+
+      if (filePath != null) {
+        final file = File(filePath);
+        await file.writeAsString(mdContent);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Exported to ${file.path.split('/').last}'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+    } catch (_) {
+      // Fallback if desktop save dialog fails
+    }
+
+    await Clipboard.setData(ClipboardData(text: mdContent));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chat exported: Markdown copied to clipboard'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Future<void> _clearMessages(BuildContext context) async {

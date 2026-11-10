@@ -190,6 +190,44 @@ class OllamaClient {
     }
   }
 
+  /// Creates a new model from a Modelfile string, streaming progress status.
+  Future<void> createModel({
+    required String name,
+    required String modelfile,
+    void Function(String status)? onProgress,
+  }) async {
+    final response = await _dio.post<ResponseBody>(
+      '/api/create',
+      data: {'name': name, 'modelfile': modelfile, 'stream': true},
+      options: Options(responseType: ResponseType.stream),
+    );
+
+    final stream = response.data!.stream;
+    final buffer = StringBuffer();
+
+    await for (final chunk in stream) {
+      buffer.write(utf8.decode(chunk));
+      final lines = buffer.toString().split('\n');
+
+      buffer.clear();
+      buffer.write(lines.last);
+
+      for (var i = 0; i < lines.length - 1; i++) {
+        final line = lines[i].trim();
+        if (line.isEmpty) continue;
+        try {
+          final json = jsonDecode(line) as Map<String, dynamic>;
+          final status = json['status'] as String? ?? '';
+          if (status.isNotEmpty) {
+            onProgress?.call(status);
+          }
+        } catch (_) {
+          // Skip malformed lines
+        }
+      }
+    }
+  }
+
   /// Cancels the current streaming request.
   void cancelStream() {
     _streamCancelToken?.cancel('User cancelled');

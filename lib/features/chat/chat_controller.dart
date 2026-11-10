@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import '../../core/models.dart' as api;
 import '../../core/providers.dart';
 import '../../database/database.dart';
 import '../../database/database_provider.dart';
+import 'chat_media_helper.dart';
 import 'chat_providers.dart';
 
 /// Provides the [ChatController] scoped to a conversation.
@@ -31,17 +33,22 @@ class ChatController {
   AppDatabase get _db => ref.read(appDatabaseProvider);
 
   /// Sends a user message and starts streaming the assistant reply.
-  Future<void> sendMessage(String content, String model) async {
-    if (content.trim().isEmpty) return;
+  Future<void> sendMessage(
+    String content,
+    String model, {
+    List<String>? images,
+  }) async {
+    if (content.trim().isEmpty && (images == null || images.isEmpty)) return;
 
     final now = DateTime.now();
 
-    // 1. Insert user message
+    // 1. Insert user message with embedded images if present
+    final storedContent = formatMessageWithImages(content, images);
     await _db.insertMessage(
       MessagesCompanion(
         conversationId: Value(conversationId),
         role: const Value('user'),
-        content: Value(content.trim()),
+        content: Value(storedContent),
         createdAt: Value(now),
       ),
     );
@@ -66,25 +73,49 @@ class ChatController {
       ),
     );
 
-    // 4. Fetch conversation history for context
-    final dbMessages = await _db.getMessages(conversationId);
-    // Remove the empty placeholder we just inserted from history
-    final historyMessages = dbMessages
-        .where((m) => m.id != _assistantMessageId)
-        .map(
-          (m) => api.ChatMessage(
-            role: m.role,
-            content: m.content,
-            createdAt: m.createdAt,
-          ),
-        )
-        .toList();
+    // 4. Fetch conversation metadata for system prompt & parameter presets
+    final conv = await _db.getConversation(conversationId);
+    Map<String, dynamic>? options;
+    if (conv?.paramPreset != null && conv!.paramPreset!.isNotEmpty) {
+      try {
+        options = jsonDecode(conv.paramPreset!) as Map<String, dynamic>;
+      } catch (_) {}
+    }
 
-    // 5. Start streaming
+    // 5. Fetch conversation history for context
+    final dbMessages = await _db.getMessages(conversationId);
+    final historyMessages = <api.ChatMessage>[];
+
+    // Prepend system prompt if configured
+    if (conv?.systemPrompt != null && conv!.systemPrompt!.trim().isNotEmpty) {
+      historyMessages.add(
+        api.ChatMessage(
+          role: 'system',
+          content: conv.systemPrompt!.trim(),
+        ),
+      );
+    }
+
+    // Add prior dialogue (excluding the current assistant placeholder)
+    for (final m in dbMessages) {
+      if (m.id == _assistantMessageId) continue;
+      final parsed = parseMessageContent(m.content);
+      historyMessages.add(
+        api.ChatMessage(
+          role: m.role,
+          content: parsed.text,
+          createdAt: m.createdAt,
+          images: parsed.images,
+        ),
+      );
+    }
+
+    // 6. Start streaming with configured parameters
     final client = ref.read(ollamaClientProvider);
     final stream = client.chatStream(
       model: model,
       messages: historyMessages,
+      options: options,
     );
 
     _streamSub = stream.listen(

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_highlight/flutter_highlight.dart';
@@ -7,6 +9,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
 
 import '../../database/database.dart';
+import 'chat_media_helper.dart';
 
 /// Minimalist, document-like message presentation.
 /// Assistant responses are rendered as clean editorial prose.
@@ -68,6 +71,7 @@ class _UserMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final parsed = parseMessageContent(content);
 
     return Align(
       alignment: Alignment.centerRight,
@@ -82,13 +86,43 @@ class _UserMessage extends StatelessWidget {
             width: 0.8,
           ),
         ),
-        child: SelectableText(
-          content,
-          style: TextStyle(
-            fontSize: 13.5,
-            height: 1.55,
-            color: colorScheme.onSurface,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (parsed.images != null && parsed.images!.isNotEmpty) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: parsed.images!.map((imgBase64) {
+                  try {
+                    final bytes = base64Decode(imgBase64);
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.memory(
+                        bytes,
+                        width: 140,
+                        height: 140,
+                        fit: BoxFit.cover,
+                      ),
+                    );
+                  } catch (_) {
+                    return const SizedBox.shrink();
+                  }
+                }).toList(),
+              ),
+              if (parsed.text.isNotEmpty) const SizedBox(height: 8),
+            ],
+            if (parsed.text.isNotEmpty)
+              SelectableText(
+                parsed.text,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  height: 1.55,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+          ],
         ),
       ),
     );

@@ -4,10 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'chat_controller.dart';
 import 'chat_input_bar.dart';
 import 'chat_message_list.dart';
+import 'chat_params_drawer.dart';
 import 'chat_providers.dart';
 import 'chat_toolbar.dart';
 
-/// The active chat area showing toolbar, messages, and input.
+/// The active chat area showing toolbar, messages, input, and optional parameters side panel.
 class ChatArea extends ConsumerWidget {
   const ChatArea({super.key, required this.conversationId});
 
@@ -15,25 +16,41 @@ class ChatArea extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controller =
-        ref.read(chatControllerProvider(conversationId));
+    final controller = ref.read(chatControllerProvider(conversationId));
+    final showParams = ref.watch(showParamsPanelProvider);
 
-    return Column(
+    return Row(
       children: [
-        // Toolbar
-        ChatToolbar(conversationId: conversationId),
-        // Message list
+        // Main conversation view
         Expanded(
-          child: ChatMessageList(conversationId: conversationId),
+          child: Column(
+            children: [
+              // Toolbar
+              ChatToolbar(conversationId: conversationId),
+              // Message list
+              Expanded(
+                child: ChatMessageList(conversationId: conversationId),
+              ),
+              // Input bar with vision/image support
+              ChatInputBar(
+                onSend: (text, images) async {
+                  final model = ref.read(selectedModelProvider);
+                  await controller.sendMessage(text, model, images: images);
+                },
+                onStop: controller.cancelStream,
+              ),
+            ],
+          ),
         ),
-        // Input bar
-        ChatInputBar(
-          onSend: (text) async {
-            final model = ref.read(selectedModelProvider);
-            await controller.sendMessage(text, model);
-          },
-          onStop: controller.cancelStream,
-        ),
+
+        // Collapsible side drawer for inference parameters & system prompt
+        if (showParams)
+          ChatParamsDrawer(
+            conversationId: conversationId,
+            onClose: () {
+              ref.read(showParamsPanelProvider.notifier).state = false;
+            },
+          ),
       ],
     );
   }

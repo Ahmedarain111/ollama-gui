@@ -20,14 +20,28 @@ class ConversationSidebar extends ConsumerStatefulWidget {
 }
 
 class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.trim();
+      });
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.listenManual(newChatTriggerProvider, (prev, next) {
         if (next > 0) _showNewChatDialog();
       });
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -49,8 +63,71 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
         children: [
           // New Chat Action Bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
             child: _NewChatButton(onTap: _showNewChatDialog),
+          ),
+
+          // Conversation Search Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+            child: SizedBox(
+              height: 30,
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(fontSize: 12),
+                decoration: InputDecoration(
+                  hintText: 'Search chats...',
+                  hintStyle: TextStyle(
+                    fontSize: 11.5,
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    size: 14,
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  ),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () => _searchController.clear(),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 13,
+                              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        )
+                      : null,
+                  suffixIconConstraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide(
+                      color: colorScheme.outline.withValues(alpha: 0.3),
+                      width: 0.8,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide(
+                      color: colorScheme.outline.withValues(alpha: 0.3),
+                      width: 0.8,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide(
+                      color: colorScheme.primary,
+                      width: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
 
           // Conversation List
@@ -78,11 +155,26 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
                   );
                 }
 
+                final filtered = _searchQuery.isEmpty
+                    ? conversations
+                    : conversations
+                        .where((c) =>
+                            c.title.toLowerCase().contains(_searchQuery.toLowerCase()))
+                        .toList();
+
+                if (filtered.isEmpty) {
+                  return EmptyState(
+                    icon: Icons.search_off_rounded,
+                    title: 'No matches',
+                    subtitle: 'No chats matching "$_searchQuery"',
+                  );
+                }
+
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  itemCount: conversations.length,
+                  itemCount: filtered.length,
                   itemBuilder: (ctx, i) {
-                    final conv = conversations[i];
+                    final conv = filtered[i];
                     return _ConversationRow(
                       conversation: conv,
                       isSelected: conv.id == activeId,

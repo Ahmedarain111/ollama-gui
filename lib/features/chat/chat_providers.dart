@@ -76,3 +76,13 @@ final conversationsStreamProvider =
   final db = ref.watch(appDatabaseProvider);
   return db.watchConversations();
 });
+
+/// Watches a single conversation from the drift database.
+final conversationDetailProvider =
+    StreamProvider.family<Conversation?, int>((ref, convId) {
+  final db = ref.watch(appDatabaseProvider);
+  return db.watchConversation(convId);
+});
+
+/// Controls whether the inference parameters and system prompt side panel is open.
+final showParamsPanelProvider = StateProvider<bool>((ref) => false);
