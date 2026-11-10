@@ -228,6 +228,16 @@ class OllamaClient {
     }
   }
 
+  /// Unloads a model from VRAM immediately by setting keep_alive to 0.
+  Future<void> unloadModel(String name) async {
+    try {
+      await _dio.post<dynamic>(
+        '/api/generate',
+        data: {'model': name, 'keep_alive': 0},
+      );
+    } catch (_) {}
+  }
+
   /// Cancels the current streaming request.
   void cancelStream() {
     _streamCancelToken?.cancel('User cancelled');

@@ -169,30 +169,9 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
     final effectiveBaseModel = _selectedBaseModel ?? (installedNames.isNotEmpty ? installedNames.first : 'llama3.2');
     final modelfileContent = _generateModelfileContent(effectiveBaseModel);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Modelfile Studio'),
-        actions: [
-          HoverIconButton(
-            icon: Icons.copy_rounded,
-            label: 'Copy Modelfile',
-            iconSize: 16,
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: modelfileContent));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Modelfile copied to clipboard'),
-                  duration: Duration(seconds: 1),
-                ),
-              );
-            },
-          ),
-          const SizedBox(width: 14),
-        ],
-      ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
           // Left Column: Builder controls (420px)
           Container(
             width: 420,
@@ -520,7 +499,22 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                             color: colorScheme.onSurface,
                           ),
                         ),
-                        const Spacer(),
+                        HoverIconButton(
+                          icon: Icons.copy_rounded,
+                          label: 'Copy Modelfile',
+                          iconSize: 15,
+                          tooltip: 'Copy to clipboard',
+                          onTap: () {
+                            Clipboard.setData(ClipboardData(text: modelfileContent));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Modelfile copied to clipboard'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
@@ -660,8 +654,7 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildLabel(String text, ColorScheme colorScheme) {

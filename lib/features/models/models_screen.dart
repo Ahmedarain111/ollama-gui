@@ -68,80 +68,94 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
       error: (_, __) => 0,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            // Segmented toggle between Installed and Explore Library
-            Container(
-              height: 32,
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: colorScheme.outline.withValues(alpha: 0.3),
-                  width: 0.8,
-                ),
-              ),
-              padding: const EdgeInsets.all(2),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _TabPill(
-                    label: 'Installed ($installedCount)',
-                    isSelected: _selectedTab == 0,
-                    onTap: () => setState(() => _selectedTab = 0),
-                  ),
-                  _TabPill(
-                    label: 'Explore Library (${ollamaModelCatalog.length})',
-                    isSelected: _selectedTab == 1,
-                    onTap: () => setState(() => _selectedTab = 1),
-                  ),
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Subheader Controls Bar
+        Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            border: Border(
+              bottom: BorderSide(
+                color: theme.dividerTheme.color ?? colorScheme.outlineVariant,
+                width: 1,
               ),
             ),
-          ],
+          ),
+          child: Row(
+            children: [
+              // Segmented toggle between Installed and Explore Library
+              Container(
+                height: 30,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.3),
+                    width: 0.8,
+                  ),
+                ),
+                padding: const EdgeInsets.all(2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _TabPill(
+                      label: 'Installed ($installedCount)',
+                      isSelected: _selectedTab == 0,
+                      onTap: () => setState(() => _selectedTab = 0),
+                    ),
+                    _TabPill(
+                      label: 'Explore Library (${ollamaModelCatalog.length})',
+                      isSelected: _selectedTab == 1,
+                      onTap: () => setState(() => _selectedTab = 1),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Spacer(),
+
+              if (_selectedTab == 0) ...[
+                HoverIconButton(
+                  icon: Icons.refresh_rounded,
+                  label: 'Refresh',
+                  iconSize: 18,
+                  onTap: () => ref.read(modelsNotifierProvider.notifier).refresh(),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.tonalIcon(
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: const Text('Pull model', style: TextStyle(fontSize: 12.5)),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
+                  onPressed: () => _openPullDialog(context),
+                ),
+              ] else ...[
+                FilledButton.tonalIcon(
+                  icon: const Icon(Icons.download_rounded, size: 16),
+                  label: const Text('Custom pull', style: TextStyle(fontSize: 12.5)),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
+                  onPressed: () => _openPullDialog(context),
+                ),
+              ],
+            ],
+          ),
         ),
-        actions: [
-          if (_selectedTab == 0) ...[
-            HoverIconButton(
-              icon: Icons.refresh_rounded,
-              label: 'Refresh',
-              iconSize: 18,
-              onTap: () => ref.read(modelsNotifierProvider.notifier).refresh(),
-            ),
-            const SizedBox(width: 8),
-            Padding(
-              padding: const EdgeInsets.only(right: 14),
-              child: FilledButton.tonalIcon(
-                icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text('Pull model', style: TextStyle(fontSize: 12.5)),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                ),
-                onPressed: () => _openPullDialog(context),
-              ),
-            ),
-          ] else ...[
-            Padding(
-              padding: const EdgeInsets.only(right: 14),
-              child: FilledButton.tonalIcon(
-                icon: const Icon(Icons.download_rounded, size: 16),
-                label: const Text('Custom pull', style: TextStyle(fontSize: 12.5)),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                ),
-                onPressed: () => _openPullDialog(context),
-              ),
-            ),
-          ],
-        ],
-      ),
-      body: _selectedTab == 0
-          ? _buildInstalledView(context, colorScheme, modelsAsync, runningAsync)
-          : _buildLibraryView(context, colorScheme, modelsAsync),
+
+        // Body content
+        Expanded(
+          child: _selectedTab == 0
+              ? _buildInstalledView(context, colorScheme, modelsAsync, runningAsync)
+              : _buildLibraryView(context, colorScheme, modelsAsync),
+        ),
+      ],
     );
   }
 

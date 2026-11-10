@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'app_top_bar.dart';
 import 'nav_rail.dart';
 
-/// Persistent shell wrapping all screens with the navigation rail.
+/// Persistent shell wrapping all screens with the navigation rail and system usage top bar.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.child});
 
@@ -22,7 +23,15 @@ class AppShell extends StatelessWidget {
             onDestinationSelected: (index) =>
                 _navigate(context, index),
           ),
-          Expanded(child: child),
+          Expanded(
+            child: Column(
+              children: [
+                // Global top bar with live CPU, GPU, RAM, VRAM meters
+                const AppTopBar(),
+                Expanded(child: child),
+              ],
+            ),
+          ),
         ],
       ),
     );

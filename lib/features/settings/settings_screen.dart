@@ -76,9 +76,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final connectionStatus = ref.watch(ollamaConnectionStatusProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Preferences'),
-      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 680),
