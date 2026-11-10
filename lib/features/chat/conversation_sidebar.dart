@@ -50,49 +50,7 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
           // New Chat Action Bar
           Padding(
             padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(6),
-              onTap: _showNewChatDialog,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: colorScheme.outline.withValues(alpha: 0.4),
-                    width: 0.8,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.add_rounded,
-                      size: 15,
-                      color: colorScheme.onSurface,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'New chat',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      'Ctrl N',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            child: _NewChatButton(onTap: _showNewChatDialog),
           ),
 
           // Conversation List
@@ -219,7 +177,7 @@ class _ConversationRowState extends State<_ConversationRow> {
     final rowBg = isActive
         ? colorScheme.surfaceContainerHighest
         : _hovered
-            ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.4)
+            ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
             : Colors.transparent;
 
     final shortModel = widget.conversation.model.split(':').first;
@@ -227,9 +185,12 @@ class _ConversationRowState extends State<_ConversationRow> {
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: widget.onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
           margin: const EdgeInsets.symmetric(vertical: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
           decoration: BoxDecoration(
@@ -237,10 +198,15 @@ class _ConversationRowState extends State<_ConversationRow> {
             borderRadius: BorderRadius.circular(6),
             border: isActive
                 ? Border.all(
-                    color: colorScheme.outline.withValues(alpha: 0.6),
+                    color: colorScheme.outline.withValues(alpha: 0.8),
                     width: 0.8,
                   )
-                : null,
+                : (_hovered
+                    ? Border.all(
+                        color: colorScheme.outline.withValues(alpha: 0.5),
+                        width: 0.8,
+                      )
+                    : Border.all(color: Colors.transparent, width: 0.8)),
           ),
           child: Row(
             children: [
@@ -422,3 +388,78 @@ class _NewChatDialogState extends ConsumerState<_NewChatDialog> {
     }
   }
 }
+
+class _NewChatButton extends StatefulWidget {
+  const _NewChatButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_NewChatButton> createState() => _NewChatButtonState();
+}
+
+class _NewChatButtonState extends State<_NewChatButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? colorScheme.surfaceContainerHighest
+                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: _hovered
+                  ? colorScheme.outline.withValues(alpha: 0.8)
+                  : colorScheme.outline.withValues(alpha: 0.4),
+              width: 0.8,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.add_rounded,
+                size: 15,
+                color: _hovered ? colorScheme.primary : colorScheme.onSurface,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'New chat',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: _hovered ? FontWeight.w600 : FontWeight.w500,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              Text(
+                'Ctrl N',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: _hovered
+                      ? colorScheme.onSurfaceVariant
+                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

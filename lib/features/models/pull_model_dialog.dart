@@ -119,28 +119,10 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
               spacing: 6,
               runSpacing: 4,
               children: _popularModels.map((m) {
-                return InkWell(
-                  borderRadius: BorderRadius.circular(4),
-                  onTap: _isPulling ? null : () => _controller.text = m,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: colorScheme.outline.withValues(alpha: 0.4),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Text(
-                      m,
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
+                return _SuggestionChip(
+                  label: m,
+                  enabled: !_isPulling,
+                  onTap: () => _controller.text = m,
                 );
               }).toList(),
             ),
@@ -203,3 +185,71 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
     );
   }
 }
+
+class _SuggestionChip extends StatefulWidget {
+  const _SuggestionChip({
+    required this.label,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  State<_SuggestionChip> createState() => _SuggestionChipState();
+}
+
+class _SuggestionChipState extends State<_SuggestionChip> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      onEnter: (_) {
+        if (widget.enabled) setState(() => _hovered = true);
+      },
+      onExit: (_) {
+        if (widget.enabled) setState(() => _hovered = false);
+      },
+      cursor: widget.enabled
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
+      child: GestureDetector(
+        onTap: widget.enabled ? widget.onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          decoration: BoxDecoration(
+            color: _hovered && widget.enabled
+                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.9)
+                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: _hovered && widget.enabled
+                  ? colorScheme.outline.withValues(alpha: 0.8)
+                  : colorScheme.outline.withValues(alpha: 0.4),
+              width: 0.8,
+            ),
+          ),
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 11,
+              fontWeight: _hovered ? FontWeight.w500 : FontWeight.w400,
+              color: _hovered && widget.enabled
+                  ? colorScheme.onSurface
+                  : colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

@@ -295,6 +295,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     InkWell(
                       borderRadius: BorderRadius.circular(5),
+                      mouseCursor: SystemMouseCursors.click,
+                      hoverColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
                       onTap: () {
                         launchUrl(
                           Uri.parse('https://github.com/Ahmedarain111/ollama-gui'),

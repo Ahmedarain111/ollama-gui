@@ -100,30 +100,11 @@ class ModelCard extends ConsumerWidget {
                   color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
               ),
-              InkWell(
-                borderRadius: BorderRadius.circular(5),
+              _StartChatButton(
                 onTap: () {
                   ref.read(selectedModelProvider.notifier).state = model.name;
                   context.go('/chat');
                 },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Start chat',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_rounded, size: 12, color: colorScheme.primary),
-                    ],
-                  ),
-                ),
               ),
             ],
           ),
@@ -263,9 +244,15 @@ class _HoverCardMenuState extends State<_HoverCardMenu> {
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
           decoration: BoxDecoration(
             color: _hovered
-                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.85)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: _hovered
+                  ? colorScheme.outline.withValues(alpha: 0.6)
+                  : Colors.transparent,
+              width: 0.8,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -304,4 +291,64 @@ class _HoverCardMenuState extends State<_HoverCardMenu> {
     );
   }
 }
+
+class _StartChatButton extends StatefulWidget {
+  const _StartChatButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_StartChatButton> createState() => _StartChatButtonState();
+}
+
+class _StartChatButtonState extends State<_StartChatButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? colorScheme.primary.withValues(alpha: 0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(5),
+            border: Border.all(
+              color: _hovered
+                  ? colorScheme.primary.withValues(alpha: 0.45)
+                  : colorScheme.primary.withValues(alpha: 0.15),
+              width: 0.8,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Start chat',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.arrow_forward_rounded, size: 12, color: colorScheme.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 

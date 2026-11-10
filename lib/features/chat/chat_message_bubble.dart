@@ -202,6 +202,8 @@ class _AssistantMessage extends StatelessWidget {
                   opacity: isHovered ? 1.0 : 0.0,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(4),
+                    mouseCursor: SystemMouseCursors.click,
+                    hoverColor: colorScheme.surfaceContainerHighest,
                     onTap: () {
                       Clipboard.setData(ClipboardData(text: message.content));
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -310,6 +312,8 @@ class _CodeBlockBuilder extends MarkdownElementBuilder {
                 const Spacer(),
                 InkWell(
                   borderRadius: BorderRadius.circular(4),
+                  mouseCursor: SystemMouseCursors.click,
+                  hoverColor: colorScheme.surfaceContainerHighest,
                   onTap: () => Clipboard.setData(ClipboardData(text: raw)),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),

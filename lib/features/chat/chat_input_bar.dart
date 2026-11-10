@@ -161,36 +161,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                         const Spacer(),
 
                         if (isStreaming)
-                          InkWell(
-                            borderRadius: BorderRadius.circular(6),
-                            onTap: widget.onStop,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: colorScheme.error.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: colorScheme.error.withValues(alpha: 0.4),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.stop_rounded, size: 13, color: colorScheme.error),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Stop',
-                                    style: TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w500,
-                                      color: colorScheme.error,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
+                          _StopButton(onTap: widget.onStop)
                         else
                           HoverIconButton(
                             icon: Icons.arrow_upward_rounded,
@@ -225,3 +196,63 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
     );
   }
 }
+
+class _StopButton extends StatefulWidget {
+  const _StopButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_StopButton> createState() => _StopButtonState();
+}
+
+class _StopButtonState extends State<_StopButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? colorScheme.error.withValues(alpha: 0.22)
+                : colorScheme.error.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: _hovered
+                  ? colorScheme.error.withValues(alpha: 0.75)
+                  : colorScheme.error.withValues(alpha: 0.4),
+              width: 0.8,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.stop_rounded, size: 14, color: colorScheme.error),
+              const SizedBox(width: 4),
+              Text(
+                'Stop',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.error,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

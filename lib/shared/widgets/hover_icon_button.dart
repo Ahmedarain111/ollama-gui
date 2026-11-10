@@ -60,17 +60,17 @@ class _HoverIconButtonState extends State<HoverIconButton> {
 
     final bg = widget.backgroundColor ?? Colors.transparent;
     final hoverBg = widget.hoverBackgroundColor ??
-        colorScheme.surfaceContainerHighest.withValues(alpha: 0.6);
+        colorScheme.surfaceContainerHighest.withValues(alpha: 0.85);
     final activeBg = widget.enabled && _isHovered ? hoverBg : bg;
 
-    final border = widget.borderColor != null
-        ? Border.all(
-            color: _isHovered
-                ? widget.borderColor!
-                : widget.borderColor!.withValues(alpha: 0.5),
-            width: 0.8,
-          )
-        : null;
+    final border = Border.all(
+      color: _isHovered && widget.enabled
+          ? (widget.borderColor ?? colorScheme.outline.withValues(alpha: 0.7))
+          : (widget.borderColor != null
+              ? widget.borderColor!.withValues(alpha: 0.4)
+              : Colors.transparent),
+      width: 0.8,
+    );
 
     final resolvedTextColor = widget.enabled
         ? (_isHovered

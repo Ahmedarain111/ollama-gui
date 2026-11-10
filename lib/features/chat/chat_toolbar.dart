@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/models.dart';
 import '../../database/database_provider.dart';
 import 'chat_providers.dart';
 
@@ -85,16 +86,23 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
                       setState(() => _editingTitle = false);
                     },
                   )
-                : GestureDetector(
-                    onDoubleTap: () => setState(() => _editingTitle = true),
-                    child: Text(
-                      conv?.title ?? 'Conversation',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurface,
+                : Tooltip(
+                    message: 'Double-click to rename',
+                    waitDuration: const Duration(milliseconds: 500),
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onDoubleTap: () => setState(() => _editingTitle = true),
+                        child: Text(
+                          conv?.title ?? 'Conversation',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -102,51 +110,18 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
 
           const SizedBox(width: 12),
 
-          // Sleek Model Selector
+          // Sleek Model Selector with hover highlight and click cursor
           modelsAsync.when(
             data: (models) {
               if (models.isEmpty) return const SizedBox.shrink();
-              return Container(
-                height: 28,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: colorScheme.outline.withValues(alpha: 0.5),
-                    width: 0.8,
-                  ),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: models.any((m) => m.name == selectedModel)
-                        ? selectedModel
-                        : models.first.name,
-                    isDense: true,
-                    icon: Icon(
-                      Icons.unfold_more_rounded,
-                      size: 14,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 11.5,
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    items: models.map((m) {
-                      return DropdownMenuItem(
-                        value: m.name,
-                        child: Text(m.name),
-                      );
-                    }).toList(),
-                    onChanged: (newModel) {
-                      if (newModel != null) {
-                        ref.read(selectedModelProvider.notifier).state = newModel;
-                      }
-                    },
-                  ),
-                ),
+              return _ModelSelectorDropdown(
+                models: models,
+                selectedModel: selectedModel,
+                onChanged: (newModel) {
+                  if (newModel != null) {
+                    ref.read(selectedModelProvider.notifier).state = newModel;
+                  }
+                },
               );
             },
             loading: () => const SizedBox.shrink(),
@@ -246,9 +221,15 @@ class _HoverActionsMenuState extends State<_HoverActionsMenu> {
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
           decoration: BoxDecoration(
             color: _hovered
-                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.85)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: _hovered
+                  ? colorScheme.outline.withValues(alpha: 0.6)
+                  : Colors.transparent,
+              width: 0.8,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -287,4 +268,81 @@ class _HoverActionsMenuState extends State<_HoverActionsMenu> {
     );
   }
 }
+
+class _ModelSelectorDropdown extends StatefulWidget {
+  const _ModelSelectorDropdown({
+    required this.models,
+    required this.selectedModel,
+    required this.onChanged,
+  });
+
+  final List<OllamaModel> models;
+  final String selectedModel;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  State<_ModelSelectorDropdown> createState() => _ModelSelectorDropdownState();
+}
+
+class _ModelSelectorDropdownState extends State<_ModelSelectorDropdown> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOutCubic,
+        height: 28,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: _hovered
+              ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.9)
+              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: _hovered
+                ? colorScheme.outline.withValues(alpha: 0.85)
+                : colorScheme.outline.withValues(alpha: 0.45),
+            width: 0.8,
+          ),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: widget.models.any((m) => m.name == widget.selectedModel)
+                ? widget.selectedModel
+                : widget.models.first.name,
+            isDense: true,
+            icon: Icon(
+              Icons.unfold_more_rounded,
+              size: 14,
+              color: _hovered
+                  ? colorScheme.onSurface
+                  : colorScheme.onSurfaceVariant,
+            ),
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 11.5,
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w500,
+            ),
+            items: widget.models.map((m) {
+              return DropdownMenuItem(
+                value: m.name,
+                child: Text(m.name),
+              );
+            }).toList(),
+            onChanged: widget.onChanged,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 

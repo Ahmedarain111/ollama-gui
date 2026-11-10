@@ -125,6 +125,8 @@ class _AppNavRailState extends ConsumerState<AppNavRail> {
               padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
+                mouseCursor: SystemMouseCursors.click,
+                hoverColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
                 onTap: () => context.go('/settings'),
                 child: Container(
                   height: 36,
@@ -255,7 +257,7 @@ class _NavItemState extends State<_NavItem> {
     final bgColor = isActive
         ? colorScheme.surfaceContainerHighest
         : isHovered
-            ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
+            ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.7)
             : Colors.transparent;
 
     return Tooltip(
@@ -267,7 +269,9 @@ class _NavItemState extends State<_NavItem> {
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           onTap: widget.onTap,
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            curve: Curves.easeOutCubic,
             height: 38,
             margin: const EdgeInsets.symmetric(horizontal: 8),
             padding: EdgeInsets.symmetric(horizontal: widget.isExpanded ? 10 : 0),
@@ -279,7 +283,12 @@ class _NavItemState extends State<_NavItem> {
                       color: colorScheme.outline.withValues(alpha: 0.8),
                       width: 0.8,
                     )
-                  : null,
+                  : (isHovered
+                      ? Border.all(
+                          color: colorScheme.outline.withValues(alpha: 0.5),
+                          width: 0.8,
+                        )
+                      : null),
             ),
             child: widget.isExpanded
                 ? Row(
