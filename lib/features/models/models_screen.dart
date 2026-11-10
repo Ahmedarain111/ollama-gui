@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/hover_icon_button.dart';
 import '../chat/chat_providers.dart';
 import 'model_card.dart';
 import 'models_providers.dart';
@@ -29,12 +30,13 @@ class ModelsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Local Models'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            tooltip: 'Refresh',
-            onPressed: () => ref.read(modelsNotifierProvider.notifier).refresh(),
+          HoverIconButton(
+            icon: Icons.refresh_rounded,
+            label: 'Refresh',
+            iconSize: 18,
+            onTap: () => ref.read(modelsNotifierProvider.notifier).refresh(),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
           Padding(
             padding: const EdgeInsets.only(right: 14),
             child: FilledButton.tonalIcon(

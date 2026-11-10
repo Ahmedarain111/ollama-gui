@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/providers.dart';
+import '../../shared/widgets/hover_icon_button.dart';
 import '../../shared/widgets/status_dot.dart';
 import 'settings_providers.dart';
 
@@ -166,19 +167,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           child: const Text('Save', style: TextStyle(fontSize: 12.5)),
                         ),
                         const SizedBox(width: 6),
-                        IconButton.outlined(
-                          icon: _isTesting
-                              ? const SizedBox(
-                                  width: 12,
-                                  height: 12,
-                                  child: CircularProgressIndicator(strokeWidth: 1.5),
-                                )
-                              : const Icon(Icons.refresh_rounded, size: 16),
+                        HoverIconButton(
+                          icon: Icons.refresh_rounded,
+                          label: 'Test',
+                          iconSize: 16,
+                          enabled: !_isTesting,
                           tooltip: 'Test connection',
-                          style: IconButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          ),
-                          onPressed: _isTesting ? null : _testConnection,
+                          borderColor: colorScheme.outline,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          onTap: _testConnection,
                         ),
                       ],
                     ),

@@ -155,16 +155,8 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
 
           const SizedBox(width: 6),
 
-          // Actions Menu
-          PopupMenuButton<String>(
-            icon: Icon(
-              Icons.more_horiz_rounded,
-              size: 18,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            tooltip: 'Actions',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          // Actions Menu with text revealed on hover
+          _HoverActionsMenu(
             onSelected: (val) {
               if (val == 'rename') {
                 setState(() => _editingTitle = true);
@@ -218,3 +210,81 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
     }
   }
 }
+
+class _HoverActionsMenu extends StatefulWidget {
+  const _HoverActionsMenu({
+    required this.onSelected,
+    required this.itemBuilder,
+  });
+
+  final PopupMenuItemSelected<String> onSelected;
+  final PopupMenuItemBuilder<String> itemBuilder;
+
+  @override
+  State<_HoverActionsMenu> createState() => _HoverActionsMenuState();
+}
+
+class _HoverActionsMenuState extends State<_HoverActionsMenu> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: PopupMenuButton<String>(
+        onSelected: widget.onSelected,
+        itemBuilder: widget.itemBuilder,
+        tooltip: '',
+        padding: EdgeInsets.zero,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.more_horiz_rounded,
+                size: 16,
+                color: _hovered
+                    ? colorScheme.onSurface
+                    : colorScheme.onSurfaceVariant,
+              ),
+              ClipRect(
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 160),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.centerLeft,
+                  child: _hovered
+                      ? Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Text(
+                            'Actions',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

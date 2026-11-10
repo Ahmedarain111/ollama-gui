@@ -46,14 +46,7 @@ class ModelCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              PopupMenuButton<String>(
-                icon: Icon(
-                  Icons.more_horiz_rounded,
-                  size: 16,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+              _HoverCardMenu(
                 onSelected: (val) {
                   if (val == 'info') {
                     _showInfo(context, ref);
@@ -234,3 +227,81 @@ class _Tag extends StatelessWidget {
     );
   }
 }
+
+class _HoverCardMenu extends StatefulWidget {
+  const _HoverCardMenu({
+    required this.onSelected,
+    required this.itemBuilder,
+  });
+
+  final PopupMenuItemSelected<String> onSelected;
+  final PopupMenuItemBuilder<String> itemBuilder;
+
+  @override
+  State<_HoverCardMenu> createState() => _HoverCardMenuState();
+}
+
+class _HoverCardMenuState extends State<_HoverCardMenu> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: PopupMenuButton<String>(
+        onSelected: widget.onSelected,
+        itemBuilder: widget.itemBuilder,
+        tooltip: '',
+        padding: EdgeInsets.zero,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.more_horiz_rounded,
+                size: 15,
+                color: _hovered
+                    ? colorScheme.onSurface
+                    : colorScheme.onSurfaceVariant,
+              ),
+              ClipRect(
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 160),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.centerLeft,
+                  child: _hovered
+                      ? Padding(
+                          padding: const EdgeInsets.only(left: 3),
+                          child: Text(
+                            'Options',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

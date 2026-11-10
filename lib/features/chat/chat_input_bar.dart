@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../shared/widgets/hover_icon_button.dart';
 import 'chat_providers.dart';
 
 /// Minimal, centered input bar for drafting messages (max-width 780px).
@@ -191,23 +192,26 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                             ),
                           )
                         else
-                          IconButton(
-                            icon: Icon(
-                              Icons.arrow_upward_rounded,
-                              size: 16,
-                              color: _canSend
-                                  ? colorScheme.onPrimary
-                                  : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                            ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: _canSend
-                                  ? colorScheme.primary
-                                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                              minimumSize: const Size(28, 28),
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                            ),
-                            onPressed: _canSend ? _handleSend : null,
+                          HoverIconButton(
+                            icon: Icons.arrow_upward_rounded,
+                            label: 'Send',
+                            iconSize: 16,
+                            enabled: _canSend,
+                            color: _canSend
+                                ? colorScheme.onPrimary
+                                : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                            hoverColor: colorScheme.onPrimary,
+                            textColor: colorScheme.onPrimary,
+                            backgroundColor: _canSend
+                                ? colorScheme.primary
+                                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                            hoverBackgroundColor: _canSend
+                                ? colorScheme.primary
+                                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            borderRadius: 6,
+                            tooltip: 'Send (↵)',
+                            onTap: _handleSend,
                           ),
                       ],
                     ),

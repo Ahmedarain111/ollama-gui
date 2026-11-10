@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../database/database.dart';
 import '../../database/database_provider.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/hover_icon_button.dart';
 import 'chat_providers.dart';
 
 /// Minimalist, high-density conversation sidebar (220px).
@@ -285,14 +286,17 @@ class _ConversationRowState extends State<_ConversationRow> {
               ),
 
               if (_hovered || isActive)
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 13),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
-                  tooltip: 'Delete',
+                HoverIconButton(
+                  icon: Icons.close_rounded,
+                  label: 'Delete',
+                  iconSize: 13,
+                  fontSize: 11,
                   color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                  hoverColor: colorScheme.error.withValues(alpha: 0.15),
-                  onPressed: widget.onDelete,
+                  hoverColor: colorScheme.error,
+                  hoverBackgroundColor: colorScheme.error.withValues(alpha: 0.15),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  borderRadius: 4,
+                  onTap: widget.onDelete,
                 ),
             ],
           ),

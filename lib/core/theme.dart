@@ -6,15 +6,15 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTheme {
   AppTheme._();
 
-  // Dark Palette (Obsidian / Zinc)
-  static const Color darkBackground = Color(0xFF0E0E10);
-  static const Color darkSurface = Color(0xFF161619);
-  static const Color darkSurfaceRaised = Color(0xFF1D1D22);
-  static const Color darkBorder = Color(0xFF26262B);
-  static const Color darkBorderSubtle = Color(0xFF1F1F24);
-  static const Color darkTextPrimary = Color(0xFFF2F2F5);
-  static const Color darkTextSecondary = Color(0xFFA1A1AA);
-  static const Color darkTextMuted = Color(0xFF71717A);
+  // Dark Palette (Sophisticated Dark Slate / Zinc - softened black theme)
+  static const Color darkBackground = Color(0xFF18191E);
+  static const Color darkSurface = Color(0xFF202128);
+  static const Color darkSurfaceRaised = Color(0xFF272932);
+  static const Color darkBorder = Color(0xFF343642);
+  static const Color darkBorderSubtle = Color(0xFF2B2D38);
+  static const Color darkTextPrimary = Color(0xFFF4F4F7);
+  static const Color darkTextSecondary = Color(0xFFA5A7B4);
+  static const Color darkTextMuted = Color(0xFF787A87);
 
   // Light Palette (Alabaster / Paper)
   static const Color lightBackground = Color(0xFFFBFBFC);
@@ -55,6 +55,28 @@ class AppTheme {
         onError: Colors.white,
       ),
       textTheme: textTheme,
+      tooltipTheme: TooltipThemeData(
+        waitDuration: Duration.zero,
+        showDuration: const Duration(seconds: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: darkSurfaceRaised,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: darkBorder, width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        textStyle: const TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w500,
+          color: darkTextPrimary,
+        ),
+      ),
       dividerTheme: const DividerThemeData(
         space: 1,
         thickness: 1,
@@ -139,6 +161,28 @@ class AppTheme {
         onError: Colors.white,
       ),
       textTheme: textTheme,
+      tooltipTheme: TooltipThemeData(
+        waitDuration: Duration.zero,
+        showDuration: const Duration(seconds: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: lightSurfaceRaised,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: lightBorder, width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        textStyle: const TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w500,
+          color: lightTextPrimary,
+        ),
+      ),
       dividerTheme: const DividerThemeData(
         space: 1,
         thickness: 1,

@@ -152,7 +152,7 @@ class _AssistantMessage extends StatelessWidget {
               backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
             ),
             codeblockDecoration: BoxDecoration(
-              color: isDark ? const Color(0xFF111114) : const Color(0xFFF6F6F8),
+              color: isDark ? const Color(0xFF1E1F26) : const Color(0xFFF6F6F8),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: colorScheme.outline.withValues(alpha: 0.6),
@@ -276,7 +276,7 @@ class _CodeBlockBuilder extends MarkdownElementBuilder {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF111114) : const Color(0xFFF7F7F9),
+        color: isDark ? const Color(0xFF1E1F26) : const Color(0xFFF7F7F9),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: colorScheme.outline.withValues(alpha: 0.6),
