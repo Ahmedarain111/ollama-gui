@@ -445,23 +445,60 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
 
                 const SizedBox(height: 24),
 
-                // Build Button
-                FilledButton.icon(
-                  icon: _isBuilding
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.rocket_launch_rounded, size: 16),
-                  label: Text(_isBuilding ? 'Building Model...' : 'Build Model'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                // Build Action Box
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: colorScheme.outline.withValues(alpha: 0.4),
+                      width: 0.8,
+                    ),
                   ),
-                  onPressed: _isBuilding || installedNames.isEmpty
-                      ? null
-                      : () => _buildModel(modelfileContent),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.layers_outlined, size: 14, color: colorScheme.primary),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Target: ${_modelNameController.text.trim().isEmpty ? 'unnamed' : _modelNameController.text.trim()}',
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurface,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      FilledButton.icon(
+                        icon: _isBuilding
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.rocket_launch_rounded, size: 15),
+                        label: Text(_isBuilding ? 'Compiling & Registering...' : 'Build Model'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                        onPressed: _isBuilding || installedNames.isEmpty
+                            ? null
+                            : () => _buildModel(modelfileContent),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -615,12 +652,46 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                       padding: const EdgeInsets.all(12),
                       child: _buildLogs.isEmpty
                           ? Center(
-                              child: Text(
-                                'Click "Build Model" to compile this Modelfile into a local Ollama model.',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                                ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                                      borderRadius: BorderRadius.circular(5),
+                                      border: Border.all(
+                                        color: colorScheme.outline.withValues(alpha: 0.4),
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      r'$ ollama create <target_model> -f ./Modelfile',
+                                      style: TextStyle(
+                                        fontFamily: 'monospace',
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w500,
+                                        color: colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    'Build engine ready. Click "Build Model" to compile and register.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.75),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Outputs live layer digests, template verification, and registry tags.',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                ],
                               ),
                             )
                           : ListView.builder(

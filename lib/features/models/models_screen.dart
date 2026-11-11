@@ -125,21 +125,25 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                   onTap: () => ref.read(modelsNotifierProvider.notifier).refresh(),
                 ),
                 const SizedBox(width: 8),
-                FilledButton.tonalIcon(
-                  icon: const Icon(Icons.add_rounded, size: 16),
-                  label: const Text('Pull model', style: TextStyle(fontSize: 12.5)),
+                FilledButton.icon(
+                  icon: const Icon(Icons.add_rounded, size: 15),
+                  label: const Text('Pull model', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500)),
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
                   onPressed: () => _openPullDialog(context),
                 ),
               ] else ...[
-                FilledButton.tonalIcon(
-                  icon: const Icon(Icons.download_rounded, size: 16),
-                  label: const Text('Custom pull', style: TextStyle(fontSize: 12.5)),
+                FilledButton.icon(
+                  icon: const Icon(Icons.download_rounded, size: 15),
+                  label: const Text('Custom pull', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500)),
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
                   onPressed: () => _openPullDialog(context),
@@ -195,17 +199,79 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
           );
         }
 
+        final totalBytes = models.fold<int>(0, (sum, m) => sum + (m.size as int));
+        final totalGb = (totalBytes / 1e9).toStringAsFixed(1);
+
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: CustomScrollView(
             slivers: [
+              // Storage & Host Metrics Strip
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: colorScheme.outline.withValues(alpha: 0.5),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.storage_rounded, size: 15, color: colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Local Storage: ',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        '$totalGb GB in use across ${models.length} model${models.length == 1 ? '' : 's'}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const Spacer(),
+                      MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedTab = 1),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Explore 30+ Model Catalog',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.arrow_forward_rounded, size: 12, color: colorScheme.primary),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               // VRAM status strip
               runningAsync.when(
                 data: (running) {
                   if (running.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
                   return SliverToBoxAdapter(
                     child: Container(
-                      margin: const EdgeInsets.only(bottom: 16),
+                      margin: const EdgeInsets.only(bottom: 14),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: colorScheme.surface,
@@ -270,6 +336,84 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                   childCount: models.length,
                 ),
               ),
+
+              // Suggested models banner if few installed models
+              if (models.length < 3)
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 24),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: colorScheme.outline.withValues(alpha: 0.45),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.auto_awesome_rounded, size: 16, color: colorScheme.primary),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Expand Your Local AI Toolkit',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurface,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton.icon(
+                              icon: const Icon(Icons.apps_rounded, size: 14),
+                              label: const Text('Browse Full Catalog', style: TextStyle(fontSize: 12)),
+                              onPressed: () => setState(() => _selectedTab = 1),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Enhance reasoning, coding, and vision capabilities with popular open weights:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _QuickPullChip(
+                              name: 'deepseek-r1:7b',
+                              tag: 'Reasoning',
+                              onTap: () => _openPullDialog(context, initialModel: 'deepseek-r1:7b'),
+                            ),
+                            _QuickPullChip(
+                              name: 'qwen2.5-coder:7b',
+                              tag: 'Coding',
+                              onTap: () => _openPullDialog(context, initialModel: 'qwen2.5-coder:7b'),
+                            ),
+                            _QuickPullChip(
+                              name: 'llama3.2-vision:11b',
+                              tag: 'Vision',
+                              onTap: () => _openPullDialog(context, initialModel: 'llama3.2-vision:11b'),
+                            ),
+                            _QuickPullChip(
+                              name: 'phi4-mini',
+                              tag: 'Fast & Light',
+                              onTap: () => _openPullDialog(context, initialModel: 'phi4-mini'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -736,3 +880,88 @@ class _LibraryModelCardState extends State<_LibraryModelCard> {
     );
   }
 }
+
+class _QuickPullChip extends StatefulWidget {
+  const _QuickPullChip({
+    required this.name,
+    required this.tag,
+    required this.onTap,
+  });
+
+  final String name;
+  final String tag;
+  final VoidCallback onTap;
+
+  @override
+  State<_QuickPullChip> createState() => _QuickPullChipState();
+}
+
+class _QuickPullChipState extends State<_QuickPullChip> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? colorScheme.surfaceContainerHighest
+                : colorScheme.surface,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: _hovered
+                  ? colorScheme.primary.withValues(alpha: 0.6)
+                  : colorScheme.outline.withValues(alpha: 0.5),
+              width: 0.8,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.add_circle_outline_rounded,
+                size: 14,
+                color: _hovered ? colorScheme.primary : colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                widget.name,
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _hovered ? colorScheme.primary : colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(
+                  widget.tag,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

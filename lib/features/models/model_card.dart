@@ -320,13 +320,13 @@ class _StartChatButtonState extends State<_StartChatButton> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: _hovered
-                ? colorScheme.primary.withValues(alpha: 0.15)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(5),
+                ? colorScheme.primary.withValues(alpha: 0.18)
+                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(
               color: _hovered
-                  ? colorScheme.primary.withValues(alpha: 0.45)
-                  : colorScheme.primary.withValues(alpha: 0.15),
+                  ? colorScheme.primary.withValues(alpha: 0.6)
+                  : colorScheme.outline.withValues(alpha: 0.4),
               width: 0.8,
             ),
           ),

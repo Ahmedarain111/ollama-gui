@@ -122,15 +122,23 @@ class _AppNavRailState extends ConsumerState<AppNavRail> {
 
             // Connection status at bottom
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 14),
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
                 mouseCursor: SystemMouseCursors.click,
                 hoverColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
                 onTap: () => context.go('/settings'),
                 child: Container(
-                  height: 36,
-                  padding: EdgeInsets.symmetric(horizontal: isExpanded ? 8 : 0),
+                  height: 34,
+                  padding: EdgeInsets.symmetric(horizontal: isExpanded ? 10 : 0),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: colorScheme.outline.withValues(alpha: 0.4),
+                      width: 0.8,
+                    ),
+                  ),
                   child: isExpanded
                       ? Row(
                           children: [
@@ -147,8 +155,9 @@ class _AppNavRailState extends ConsumerState<AppNavRail> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontFamily: 'monospace',
+                                  fontWeight: FontWeight.w500,
                                   color: colorScheme.onSurfaceVariant
-                                      .withValues(alpha: 0.8),
+                                      .withValues(alpha: 0.85),
                                 ),
                                 maxLines: 1,
                                 softWrap: false,
@@ -172,22 +181,25 @@ class _AppNavRailState extends ConsumerState<AppNavRail> {
       width: 28,
       height: 28,
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primary.withValues(alpha: 0.25),
+            colorScheme.surfaceContainerHighest,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(7),
         border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.6),
+          color: colorScheme.primary.withValues(alpha: 0.4),
           width: 0.8,
         ),
       ),
       alignment: Alignment.center,
-      child: Text(
-        'O',
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: colorScheme.onSurface,
-          letterSpacing: -0.5,
-        ),
+      child: Icon(
+        Icons.terminal_rounded,
+        size: 15,
+        color: colorScheme.primary,
       ),
     );
   }
@@ -261,8 +273,8 @@ class _NavItemState extends State<_NavItem> {
             : Colors.transparent;
 
     return Tooltip(
-      message: widget.label,
-      waitDuration: Duration.zero,
+      message: widget.isExpanded ? '' : widget.label,
+      waitDuration: const Duration(milliseconds: 800),
       child: MouseRegion(
         onEnter: (_) => setState(() => _itemHovered = true),
         onExit: (_) => setState(() => _itemHovered = false),

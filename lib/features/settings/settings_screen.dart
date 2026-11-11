@@ -78,7 +78,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
+          constraints: const BoxConstraints(maxWidth: 780),
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             children: [
@@ -155,13 +155,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        FilledButton.tonal(
+                        FilledButton(
                           onPressed: _saveUrl,
                           style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                           ),
-                          child: const Text('Save', style: TextStyle(fontSize: 12.5)),
+                          child: const Text('Save', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500)),
                         ),
                         const SizedBox(width: 6),
                         HoverIconButton(
@@ -207,6 +209,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         visualDensity: VisualDensity.compact,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         textStyle: const TextStyle(fontSize: 12),
+                        selectedBackgroundColor: colorScheme.primary.withValues(alpha: 0.2),
+                        selectedForegroundColor: colorScheme.primary,
+                        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.4), width: 0.8),
                       ),
                       segments: const [
                         ButtonSegment(value: ThemeMode.system, label: Text('System')),
