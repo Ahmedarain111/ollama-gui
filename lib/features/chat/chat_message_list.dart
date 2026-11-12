@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/widgets/empty_state.dart';
+import '../settings/settings_providers.dart';
 import 'chat_message_bubble.dart';
 import 'chat_providers.dart';
 
@@ -56,6 +57,7 @@ class _ChatMessageListState extends ConsumerState<ChatMessageList> {
     final messagesAsync =
         ref.watch(messagesStreamProvider(widget.conversationId));
     final isStreaming = ref.watch(isStreamingProvider);
+    final autoScroll = ref.watch(settingsNotifierProvider).autoScroll;
 
     return messagesAsync.when(
       loading: () =>
@@ -67,10 +69,12 @@ class _ChatMessageListState extends ConsumerState<ChatMessageList> {
         if (messages.length != _prevMessageCount) {
           final isNewMessage = messages.length > _prevMessageCount;
           _prevMessageCount = messages.length;
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _scrollToBottom(smooth: isNewMessage),
-          );
-        } else if (isStreaming) {
+          if (autoScroll || isNewMessage) {
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _scrollToBottom(smooth: isNewMessage),
+            );
+          }
+        } else if (isStreaming && autoScroll) {
           WidgetsBinding.instance.addPostFrameCallback(
             (_) => _scrollToBottom(smooth: false),
           );

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/ollama_process_manager.dart';
 import 'core/providers.dart';
 import 'core/theme.dart';
+import 'features/settings/settings_providers.dart';
 import 'router.dart';
 
 class OllamaApp extends ConsumerStatefulWidget {
@@ -44,12 +45,14 @@ class _OllamaAppState extends ConsumerState<OllamaApp> {
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
+    final settings = ref.watch(settingsNotifierProvider);
+    final accent = settings.accentColor;
 
     return MaterialApp.router(
       title: 'Ollama GUI',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
+      theme: AppTheme.light(accent.lightColor, accent.lightHover),
+      darkTheme: AppTheme.dark(accent.darkColor, accent.darkHover),
       themeMode: themeMode,
       routerConfig: appRouter,
     );

@@ -22,11 +22,31 @@ class LibraryModel {
   bool get isEmbedding => category == 'Embedding';
   bool get isReasoning => category == 'Reasoning';
   bool get isCoding => category == 'Coding';
+
+  /// Returns the complete registry tag for a specific size variant.
+  String tagForSize(String size) => '$name:$size';
 }
 
-/// Catalog of 30+ popular Ollama models.
+/// Helper function to match a raw user input or tag to a curated [LibraryModel].
+LibraryModel? findLibraryModel(String? input) {
+  if (input == null) return null;
+  final clean = input.trim().toLowerCase();
+  if (clean.isEmpty) return null;
+  final baseName = clean.split(':').first;
+
+  for (final m in ollamaModelCatalog) {
+    if (m.name.toLowerCase() == baseName || m.name.toLowerCase() == clean) {
+      return m;
+    }
+  }
+  return null;
+}
+
+/// Catalog of curated Ollama models with weight variants.
 const List<LibraryModel> ollamaModelCatalog = [
+  // ---------------------------------------------------------------------------
   // Reasoning
+  // ---------------------------------------------------------------------------
   LibraryModel(
     name: 'deepseek-r1',
     description: 'Open reasoning model trained via reinforcement learning. Excels at complex math, coding, and logical reasoning.',
@@ -54,15 +74,60 @@ const List<LibraryModel> ollamaModelCatalog = [
     defaultTag: 'phi4:14b',
     isPopular: true,
   ),
+  LibraryModel(
+    name: 'marco-o1',
+    description: 'Reasoning model from Alibaba International focusing on fine-grained chain-of-thought and multilingual search.',
+    category: 'Reasoning',
+    publisher: 'Alibaba Cloud',
+    sizes: ['7b'],
+    defaultTag: 'marco-o1:7b',
+    isPopular: true,
+  ),
+  LibraryModel(
+    name: 'smallthinker',
+    description: 'High-capability 3B reasoning model trained on synthetic chain-of-thought data for efficient logical deduction.',
+    category: 'Reasoning',
+    publisher: 'Cognitive Computations',
+    sizes: ['3b'],
+    defaultTag: 'smallthinker:3b',
+  ),
+  LibraryModel(
+    name: 'qwen2.5-math',
+    description: 'Specialized mathematical problem solving model with chain-of-thought and tool-integrated reasoning.',
+    category: 'Reasoning',
+    publisher: 'Alibaba Cloud',
+    sizes: ['1.5b', '7b', '72b'],
+    defaultTag: 'qwen2.5-math:7b',
+  ),
 
+  // ---------------------------------------------------------------------------
   // Coding
+  // ---------------------------------------------------------------------------
+  LibraryModel(
+    name: 'qwen3-coder',
+    description: 'Next-generation code generation and repository-level refactoring model from the Qwen3 series.',
+    category: 'Coding',
+    publisher: 'Alibaba Cloud',
+    sizes: ['0.6b', '1.7b', '4b', '8b', '14b', '32b'],
+    defaultTag: 'qwen3-coder:8b',
+    isPopular: true,
+  ),
   LibraryModel(
     name: 'qwen2.5-coder',
     description: 'Specialized code generation, debugging, and multi-file reasoning model trained on 5.5T code tokens.',
     category: 'Coding',
     publisher: 'Alibaba Cloud',
-    sizes: ['1.5b', '7b', '14b', '32b'],
+    sizes: ['0.5b', '1.5b', '3b', '7b', '14b', '32b'],
     defaultTag: 'qwen2.5-coder:7b',
+    isPopular: true,
+  ),
+  LibraryModel(
+    name: 'codestral',
+    description: 'Mistral AI 22B open-weight generative model tailored for 80+ programming languages and fill-in-the-middle.',
+    category: 'Coding',
+    publisher: 'Mistral AI',
+    sizes: ['22b'],
+    defaultTag: 'codestral:22b',
     isPopular: true,
   ),
   LibraryModel(
@@ -73,6 +138,14 @@ const List<LibraryModel> ollamaModelCatalog = [
     sizes: ['16b', '236b'],
     defaultTag: 'deepseek-coder-v2:16b',
     isPopular: true,
+  ),
+  LibraryModel(
+    name: 'granite-code',
+    description: 'IBM open-source enterprise foundation model for code intelligence, bug patching, and modernization.',
+    category: 'Coding',
+    publisher: 'IBM',
+    sizes: ['3b', '8b', '20b', '34b'],
+    defaultTag: 'granite-code:8b',
   ),
   LibraryModel(
     name: 'codellama',
@@ -99,7 +172,9 @@ const List<LibraryModel> ollamaModelCatalog = [
     defaultTag: 'codegemma:7b',
   ),
 
+  // ---------------------------------------------------------------------------
   // Vision
+  // ---------------------------------------------------------------------------
   LibraryModel(
     name: 'llama3.2-vision',
     description: 'Meta instruction-tuned multimodal model capable of visual reasoning, OCR, and document chart analysis.',
@@ -110,6 +185,15 @@ const List<LibraryModel> ollamaModelCatalog = [
     isPopular: true,
   ),
   LibraryModel(
+    name: 'qwen2-vl',
+    description: 'Alibaba vision-language model with dynamic resolution support, video comprehension, and multilingual OCR.',
+    category: 'Vision',
+    publisher: 'Alibaba Cloud',
+    sizes: ['2b', '7b', '72b'],
+    defaultTag: 'qwen2-vl:7b',
+    isPopular: true,
+  ),
+  LibraryModel(
     name: 'llava',
     description: 'Large Language and Vision Assistant fine-tuned for conversational multi-turn image interrogation.',
     category: 'Vision',
@@ -117,6 +201,14 @@ const List<LibraryModel> ollamaModelCatalog = [
     sizes: ['7b', '13b', '34b'],
     defaultTag: 'llava:7b',
     isPopular: true,
+  ),
+  LibraryModel(
+    name: 'llava-phi3',
+    description: 'Lightweight 3.8B vision-language model combining Microsoft Phi-3 Mini with LLaVA visual architecture.',
+    category: 'Vision',
+    publisher: 'Microsoft / LLaVA',
+    sizes: ['3.8b'],
+    defaultTag: 'llava-phi3:3.8b',
   ),
   LibraryModel(
     name: 'minicpm-v',
@@ -143,7 +235,27 @@ const List<LibraryModel> ollamaModelCatalog = [
     defaultTag: 'bakllava:7b',
   ),
 
+  // ---------------------------------------------------------------------------
   // General LLMs
+  // ---------------------------------------------------------------------------
+  LibraryModel(
+    name: 'qwen3',
+    description: 'Next-generation Alibaba Cloud foundation model with enhanced reasoning, coding, math, and multilingual abilities.',
+    category: 'General',
+    publisher: 'Alibaba Cloud',
+    sizes: ['0.6b', '1.7b', '4b', '8b', '14b', '32b', '72b'],
+    defaultTag: 'qwen3:8b',
+    isPopular: true,
+  ),
+  LibraryModel(
+    name: 'qwen2.5',
+    description: 'Alibaba Cloud high-intelligence flagship model with excellent coding, math, and instruction following.',
+    category: 'General',
+    publisher: 'Alibaba Cloud',
+    sizes: ['0.5b', '1.5b', '3b', '7b', '14b', '32b', '72b'],
+    defaultTag: 'qwen2.5:7b',
+    isPopular: true,
+  ),
   LibraryModel(
     name: 'llama3.3',
     description: 'Meta cutting-edge 70B open weight model delivering Llama 3.1 405B level performance.',
@@ -163,13 +275,39 @@ const List<LibraryModel> ollamaModelCatalog = [
     isPopular: true,
   ),
   LibraryModel(
-    name: 'qwen2.5',
-    description: 'Alibaba Cloud high-intelligence flagship model with excellent coding, math, and instruction following.',
+    name: 'llama3.1',
+    description: 'Meta flagship open weights model family featuring 128k context length and state-of-the-art tool calling.',
     category: 'General',
-    publisher: 'Alibaba Cloud',
-    sizes: ['0.5b', '1.5b', '3b', '7b', '14b', '32b', '72b'],
-    defaultTag: 'qwen2.5:7b',
+    publisher: 'Meta',
+    sizes: ['8b', '70b', '405b'],
+    defaultTag: 'llama3.1:8b',
     isPopular: true,
+  ),
+  LibraryModel(
+    name: 'deepseek-v3',
+    description: 'Groundbreaking 671B Mixture-of-Experts language model with Multi-head Latent Attention and FP8 training.',
+    category: 'General',
+    publisher: 'DeepSeek',
+    sizes: ['671b'],
+    defaultTag: 'deepseek-v3:latest',
+    isPopular: true,
+  ),
+  LibraryModel(
+    name: 'mistral-small',
+    description: 'Mistral AI high-efficiency enterprise model offering low latency and premier reasoning benchmarks.',
+    category: 'General',
+    publisher: 'Mistral AI',
+    sizes: ['22b', '24b'],
+    defaultTag: 'mistral-small:24b',
+    isPopular: true,
+  ),
+  LibraryModel(
+    name: 'mistral-nemo',
+    description: '12B multilingual model developed with NVIDIA featuring 128k context window and Tekken tokenizer.',
+    category: 'General',
+    publisher: 'Mistral AI',
+    sizes: ['12b'],
+    defaultTag: 'mistral-nemo:12b',
   ),
   LibraryModel(
     name: 'mistral',
@@ -190,12 +328,28 @@ const List<LibraryModel> ollamaModelCatalog = [
     isPopular: true,
   ),
   LibraryModel(
-    name: 'mixtral',
-    description: 'High-speed sparse Mixture of Experts model with 32k context token window.',
+    name: 'granite3.1-dense',
+    description: 'IBM enterprise open model trained on 12T tokens with 128k context, tuned for corporate and RAG workflows.',
     category: 'General',
-    publisher: 'Mistral AI',
-    sizes: ['8x7b', '8x22b'],
-    defaultTag: 'mixtral:8x7b',
+    publisher: 'IBM',
+    sizes: ['2b', '8b'],
+    defaultTag: 'granite3.1-dense:8b',
+  ),
+  LibraryModel(
+    name: 'dolphin3',
+    description: 'Cognitive Computations unaligned conversational model with structured output and agentic capabilities.',
+    category: 'General',
+    publisher: 'Cognitive Computations',
+    sizes: ['8b'],
+    defaultTag: 'dolphin3:8b',
+  ),
+  LibraryModel(
+    name: 'command-r-plus',
+    description: 'Cohere enterprise 104B model optimized for complex multi-step reasoning, tool use, and enterprise RAG.',
+    category: 'General',
+    publisher: 'Cohere',
+    sizes: ['104b'],
+    defaultTag: 'command-r-plus:104b',
   ),
   LibraryModel(
     name: 'command-r',
@@ -204,6 +358,38 @@ const List<LibraryModel> ollamaModelCatalog = [
     publisher: 'Cohere',
     sizes: ['35b'],
     defaultTag: 'command-r:35b',
+  ),
+  LibraryModel(
+    name: 'falcon3',
+    description: 'TII open foundation model series designed for fast inference and edge computing efficiency.',
+    category: 'General',
+    publisher: 'TII',
+    sizes: ['1b', '3b', '7b', '10b'],
+    defaultTag: 'falcon3:7b',
+  ),
+  LibraryModel(
+    name: 'internlm2.5',
+    description: '1M context open model by Shanghai AI Lab with superior reasoning, math, and long-text understanding.',
+    category: 'General',
+    publisher: 'Shanghai AI Lab',
+    sizes: ['1.8b', '7b', '20b'],
+    defaultTag: 'internlm2.5:7b',
+  ),
+  LibraryModel(
+    name: 'olmo2',
+    description: 'Fully open model by AI2 with open weights, dataset, and training logs, matching top open benchmarks.',
+    category: 'General',
+    publisher: 'Allen AI',
+    sizes: ['7b', '13b'],
+    defaultTag: 'olmo2:7b',
+  ),
+  LibraryModel(
+    name: 'mixtral',
+    description: 'High-speed sparse Mixture of Experts model with 32k context token window.',
+    category: 'General',
+    publisher: 'Mistral AI',
+    sizes: ['8x7b', '8x22b'],
+    defaultTag: 'mixtral:8x7b',
   ),
   LibraryModel(
     name: 'phi3.5',
@@ -246,7 +432,9 @@ const List<LibraryModel> ollamaModelCatalog = [
     defaultTag: 'vicuna:7b',
   ),
 
+  // ---------------------------------------------------------------------------
   // Embedding
+  // ---------------------------------------------------------------------------
   LibraryModel(
     name: 'nomic-embed-text',
     description: 'High-performing 8192-token text embedding model outperforming OpenAI text-embedding-ada-002.',
@@ -263,6 +451,14 @@ const List<LibraryModel> ollamaModelCatalog = [
     publisher: 'BAAI',
     sizes: ['567m'],
     defaultTag: 'bge-m3:latest',
+  ),
+  LibraryModel(
+    name: 'bge-large',
+    description: 'BAAI top-performing text embedding model for semantic retrieval, ranking, and search pipelines.',
+    category: 'Embedding',
+    publisher: 'BAAI',
+    sizes: ['335m'],
+    defaultTag: 'bge-large:latest',
   ),
   LibraryModel(
     name: 'all-minilm',

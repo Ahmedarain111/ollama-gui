@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
+import '../../core/theme.dart';
 import '../../shared/widgets/status_dot.dart';
 import '../../shared/widgets/system_usage_bar.dart';
+import '../settings/settings_providers.dart';
 
 /// App-wide persistent top status bar housing the active view title,
 /// connection status, and real-time CPU, GPU, RAM, and VRAM monitors.
@@ -27,23 +29,23 @@ class AppTopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
     final path = GoRouterState.of(context).uri.path;
     final connectionStatus = ref.watch(ollamaConnectionStatusProvider);
     final baseUrl = ref.watch(ollamaBaseUrlProvider);
 
     final title = _getTitleForRoute(path);
     final icon = _getIconForRoute(path);
+    final showSystemUsage = ref.watch(settingsNotifierProvider).showSystemUsageBar;
 
     return Container(
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: colors.surface,
         border: Border(
           bottom: BorderSide(
-            color: theme.dividerTheme.color ?? colorScheme.outlineVariant,
+            color: colors.border,
             width: 1,
           ),
         ),
@@ -53,23 +55,23 @@ class AppTopBar extends ConsumerWidget {
           // Current route icon and title
           Icon(
             icon,
-            size: 14,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            size: 15,
+            color: colors.textMuted,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Text(
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+            style: AppTypography.ui(
+              size: 13,
+              weight: FontWeight.w600,
               letterSpacing: -0.1,
-              color: colorScheme.onSurface,
+              color: colors.text,
             ),
           ),
 
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
 
           // Ollama connection indicator
           connectionStatus.when(
@@ -80,29 +82,34 @@ class AppTopBar extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  StatusDot(status: ok ? ConnectionStatus.connected : ConnectionStatus.disconnected, size: 7),
+                  StatusDot(
+                    status: ok ? ConnectionStatus.connected : ConnectionStatus.disconnected,
+                    size: 7,
+                  ),
                   const SizedBox(width: 5),
                   Text(
                     ok ? 'Online' : 'Offline',
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 10,
-                      color: ok
-                          ? const Color(0xFF10B981)
-                          : colorScheme.error.withValues(alpha: 0.9),
+                    style: AppTypography.code(
+                      size: 11,
+                      weight: FontWeight.w500,
+                      color: ok ? colors.success : colors.error,
                     ),
                   ),
                 ],
               ),
             ),
-            loading: () => const Row(
+            loading: () => Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                StatusDot(status: ConnectionStatus.loading, size: 7),
-                SizedBox(width: 5),
+                const StatusDot(status: ConnectionStatus.loading, size: 7),
+                const SizedBox(width: 5),
                 Text(
                   'Connecting',
-                  style: TextStyle(fontFamily: 'monospace', fontSize: 10),
+                  style: AppTypography.code(
+                    size: 11,
+                    weight: FontWeight.w500,
+                    color: colors.warning,
+                  ),
                 ),
               ],
             ),
@@ -113,20 +120,20 @@ class AppTopBar extends ConsumerWidget {
                 const SizedBox(width: 5),
                 Text(
                   'Offline',
-                  style: TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 10,
-                    color: colorScheme.error,
+                  style: AppTypography.code(
+                    size: 11,
+                    weight: FontWeight.w500,
+                    color: colors.error,
                   ),
                 ),
               ],
             ),
           ),
 
-          const Spacer(),
-
-          // System Resource Monitors (CPU, GPU, RAM, VRAM)
-          const SystemUsageBar(),
+          if (showSystemUsage) ...[
+            const Spacer(),
+            const SystemUsageBar(),
+          ],
         ],
       ),
     );

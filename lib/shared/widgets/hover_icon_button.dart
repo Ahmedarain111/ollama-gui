@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme.dart';
+
 /// An interactive button that shows an icon by default, and smoothly
 /// expands to display its label text alongside the icon when hovered over.
 class HoverIconButton extends StatefulWidget {
@@ -17,8 +19,8 @@ class HoverIconButton extends StatefulWidget {
     this.backgroundColor,
     this.hoverBackgroundColor,
     this.borderColor,
-    this.borderRadius = 6,
-    this.padding = const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+    this.borderRadius = AppRadius.k8,
+    this.padding = const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
     this.tooltip,
     this.enabled = true,
   });
@@ -46,93 +48,99 @@ class HoverIconButton extends StatefulWidget {
 
 class _HoverIconButtonState extends State<HoverIconButton> {
   bool _isHovered = false;
+  bool _isFocused = false;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
 
-    final baseColor = widget.color ?? colorScheme.onSurfaceVariant;
-    final activeHoverColor = widget.hoverColor ?? colorScheme.onSurface;
+    final baseColor = widget.color ?? colors.textMuted;
+    final activeHoverColor = widget.hoverColor ?? colors.text;
     final fgColor = widget.enabled
-        ? (_isHovered ? activeHoverColor : baseColor)
-        : baseColor.withValues(alpha: 0.35);
+        ? ((_isHovered || _isFocused) ? activeHoverColor : baseColor)
+        : baseColor.withValues(alpha: 0.4);
 
     final bg = widget.backgroundColor ?? Colors.transparent;
-    final hoverBg = widget.hoverBackgroundColor ??
-        colorScheme.surfaceContainerHighest.withValues(alpha: 0.85);
-    final activeBg = widget.enabled && _isHovered ? hoverBg : bg;
+    final hoverBg = widget.hoverBackgroundColor ?? colors.surfaceHover;
+    final activeBg = widget.enabled && (_isHovered || _isFocused) ? hoverBg : bg;
 
-    final border = Border.all(
-      color: _isHovered && widget.enabled
-          ? (widget.borderColor ?? colorScheme.outline.withValues(alpha: 0.7))
-          : (widget.borderColor != null
-              ? widget.borderColor!.withValues(alpha: 0.4)
-              : Colors.transparent),
-      width: 0.8,
-    );
+    final Border border;
+    if (_isFocused && widget.enabled) {
+      border = Border.all(color: colors.accent, width: 2);
+    } else if (widget.borderColor != null) {
+      border = Border.all(color: widget.borderColor!, width: 1);
+    } else if (_isHovered && widget.enabled) {
+      border = Border.all(color: colors.border, width: 1);
+    } else {
+      border = Border.all(color: Colors.transparent, width: 1);
+    }
 
     final resolvedTextColor = widget.enabled
-        ? (_isHovered
+        ? ((_isHovered || _isFocused)
             ? (widget.hoverTextColor ?? widget.textColor ?? activeHoverColor)
             : (widget.textColor ?? baseColor))
-        : baseColor.withValues(alpha: 0.35);
+        : baseColor.withValues(alpha: 0.4);
 
-    Widget button = MouseRegion(
-      onEnter: (_) {
-        if (widget.enabled) setState(() => _isHovered = true);
-      },
-      onExit: (_) {
-        if (widget.enabled) setState(() => _isHovered = false);
-      },
-      cursor: widget.enabled
-          ? SystemMouseCursors.click
-          : SystemMouseCursors.basic,
-      child: GestureDetector(
-        onTap: widget.enabled ? widget.onTap : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          curve: Curves.easeOutCubic,
-          padding: widget.padding,
-          decoration: BoxDecoration(
-            color: activeBg,
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            border: border,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(
-                widget.icon,
-                size: widget.iconSize,
-                color: fgColor,
+    Widget button = FocusableActionDetector(
+      enabled: widget.enabled,
+      onShowFocusHighlight: (v) => setState(() => _isFocused = v),
+      mouseCursor: widget.enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      child: MouseRegion(
+        onEnter: (_) {
+          if (widget.enabled) setState(() => _isHovered = true);
+        },
+        onExit: (_) {
+          if (widget.enabled) setState(() => _isHovered = false);
+        },
+        child: GestureDetector(
+          onTap: widget.enabled ? widget.onTap : null,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            child: AnimatedContainer(
+              duration: AppMotion.fast,
+              curve: AppMotion.curve,
+              padding: widget.padding,
+              decoration: BoxDecoration(
+                color: activeBg,
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+                border: border,
               ),
-              ClipRect(
-                child: AnimatedSize(
-                  duration: const Duration(milliseconds: 160),
-                  curve: Curves.easeOutCubic,
-                  alignment: Alignment.centerLeft,
-                  child: _isHovered && widget.enabled
-                      ? Padding(
-                          padding: const EdgeInsets.only(left: 5),
-                          child: Text(
-                            widget.label,
-                            style: TextStyle(
-                              fontSize: widget.fontSize,
-                              fontWeight: FontWeight.w500,
-                              color: resolvedTextColor,
-                              letterSpacing: -0.1,
-                            ),
-                            maxLines: 1,
-                            softWrap: false,
-                            overflow: TextOverflow.clip,
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(
+                    widget.icon,
+                    size: widget.iconSize,
+                    color: fgColor,
+                  ),
+                  ClipRect(
+                    child: AnimatedSize(
+                      duration: AppMotion.fast,
+                      curve: AppMotion.curve,
+                      alignment: Alignment.centerLeft,
+                      child: (_isHovered || _isFocused) && widget.enabled
+                          ? Padding(
+                              padding: const EdgeInsets.only(left: 6),
+                              child: Text(
+                                widget.label,
+                                style: AppTypography.ui(
+                                  size: widget.fontSize,
+                                  weight: FontWeight.w500,
+                                  color: resolvedTextColor,
+                                ),
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.clip,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -141,7 +149,6 @@ class _HoverIconButtonState extends State<HoverIconButton> {
     if (widget.tooltip != null) {
       button = Tooltip(
         message: widget.tooltip!,
-        waitDuration: Duration.zero,
         child: button,
       );
     }

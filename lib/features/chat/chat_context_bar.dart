@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme.dart';
 import '../../database/database.dart';
 import 'chat_media_helper.dart';
 import 'chat_providers.dart';
@@ -26,13 +27,13 @@ class ContextUsage {
   int get percentage => (fraction * 100).round();
   int get remainingTokens => max(0, maxTokens - usedTokens);
 
-  Color getStatusColor(ColorScheme colorScheme) {
+  Color getStatusColor(AppColors colors) {
     if (fraction > 0.88) {
-      return const Color(0xFFEF4444); // Red/Coral alert
+      return colors.error;
     } else if (fraction > 0.70) {
-      return const Color(0xFFF59E0B); // Amber warning
+      return colors.warning;
     } else {
-      return const Color(0xFF10B981); // Emerald safe
+      return colors.success;
     }
   }
 
@@ -128,10 +129,9 @@ class _ChatContextBarState extends ConsumerState<ChatContextBar> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
     final usage = ref.watch(conversationContextUsageProvider(widget.conversationId));
-    final statusColor = usage.getStatusColor(colorScheme);
+    final statusColor = usage.getStatusColor(colors);
 
     final tooltipMessage = 'Context Window Utilization:\n'
         '• Used: ${usage.usedTokens} tokens (${usage.percentage}%)\n'
@@ -142,7 +142,6 @@ class _ChatContextBarState extends ConsumerState<ChatContextBar> {
 
     return Tooltip(
       message: tooltipMessage,
-      waitDuration: const Duration(milliseconds: 300),
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),
@@ -152,81 +151,78 @@ class _ChatContextBarState extends ConsumerState<ChatContextBar> {
             final current = ref.read(showParamsPanelProvider);
             ref.read(showParamsPanelProvider.notifier).state = !current;
           },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 140),
-            curve: Curves.easeOutCubic,
-            height: 28,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _isHovered
-                  ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.9)
-                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: _isHovered
-                    ? statusColor.withValues(alpha: 0.6)
-                    : colorScheme.outline.withValues(alpha: 0.4),
-                width: 0.8,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Status Indicator Dot or Icon
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: statusColor,
-                    shape: BoxShape.circle,
-                  ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            child: AnimatedContainer(
+              duration: AppMotion.fast,
+              curve: AppMotion.curve,
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: _isHovered ? colors.surfaceHover : colors.surface,
+                borderRadius: AppRadius.r8,
+                border: Border.all(
+                  color: _isHovered ? colors.accent : colors.border,
+                  width: 1,
                 ),
-                const SizedBox(width: 6),
-
-                // Micro Progress Bar
-                Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(2),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Status Indicator Dot
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                  alignment: Alignment.centerLeft,
-                  child: AnimatedFractionallySizedBox(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
-                    widthFactor: usage.fraction,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        borderRadius: BorderRadius.circular(2),
+                  const SizedBox(width: 8),
+
+                  // Micro Progress Bar
+                  Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    alignment: Alignment.centerLeft,
+                    child: AnimatedFractionallySizedBox(
+                      duration: AppMotion.fast,
+                      curve: AppMotion.curve,
+                      widthFactor: usage.fraction,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                const SizedBox(width: 6),
+                  const SizedBox(width: 8),
 
-                // Monospace Token Counter
-                Text(
-                  '${usage.formatK(usage.usedTokens)}/${usage.formatK(usage.maxTokens)}',
-                  style: TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurface,
+                  // Monospace Token Counter
+                  Text(
+                    '${usage.formatK(usage.usedTokens)}/${usage.formatK(usage.maxTokens)}',
+                    style: AppTypography.code(
+                      size: 12,
+                      weight: FontWeight.w500,
+                      color: colors.text,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 3),
-                Text(
-                  '(${usage.percentage}%)',
-                  style: TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 10.5,
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  const SizedBox(width: 4),
+                  Text(
+                    '(${usage.percentage}%)',
+                    style: AppTypography.code(
+                      size: 12,
+                      color: colors.textMuted,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -243,19 +239,18 @@ class DrawerContextGauge extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
     final usage = ref.watch(conversationContextUsageProvider(conversationId));
-    final statusColor = usage.getStatusColor(colorScheme);
+    final statusColor = usage.getStatusColor(colors);
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(8),
+        color: colors.surfaceHover,
+        borderRadius: AppRadius.r12,
         border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.4),
-          width: 0.8,
+          color: colors.border,
+          width: 1,
         ),
       ),
       child: Column(
@@ -270,22 +265,19 @@ class DrawerContextGauge extends ConsumerWidget {
                   const SizedBox(width: 6),
                   Text(
                     'CONTEXT USAGE',
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                      color: colorScheme.onSurfaceVariant,
+                    style: AppTypography.code(
+                      size: 12,
+                      weight: FontWeight.w600,
+                      color: colors.textMuted,
                     ),
                   ),
                 ],
               ),
               Text(
                 '${usage.percentage}% full',
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                style: AppTypography.code(
+                  size: 12,
+                  weight: FontWeight.w600,
                   color: statusColor,
                 ),
               ),
@@ -295,16 +287,16 @@ class DrawerContextGauge extends ConsumerWidget {
 
           // Full width progress bar
           Container(
-            height: 6,
+            height: 4,
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(3),
+              color: colors.border,
+              borderRadius: BorderRadius.circular(2),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(2),
               child: AnimatedFractionallySizedBox(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeOutCubic,
+                duration: AppMotion.fast,
+                curve: AppMotion.curve,
                 widthFactor: usage.fraction,
                 alignment: Alignment.centerLeft,
                 child: Container(
@@ -320,17 +312,16 @@ class DrawerContextGauge extends ConsumerWidget {
             children: [
               Text(
                 'Used: ${usage.usedTokens} tokens',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: colorScheme.onSurfaceVariant,
+                style: AppTypography.ui(
+                  size: 12,
+                  color: colors.textMuted,
                 ),
               ),
               Text(
                 'Remaining: ${usage.remainingTokens} tok',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                style: AppTypography.code(
+                  size: 12,
+                  color: colors.textMuted,
                 ),
               ),
             ],

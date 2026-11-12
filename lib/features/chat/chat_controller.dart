@@ -8,6 +8,7 @@ import '../../core/models.dart' as api;
 import '../../core/providers.dart';
 import '../../database/database.dart';
 import '../../database/database_provider.dart';
+import '../settings/settings_providers.dart';
 import 'chat_media_helper.dart';
 import 'chat_providers.dart';
 
@@ -111,11 +112,13 @@ class ChatController {
     }
 
     // 6. Start streaming with configured parameters
+    final settings = ref.read(settingsNotifierProvider);
     final client = ref.read(ollamaClientProvider);
     final stream = client.chatStream(
       model: model,
       messages: historyMessages,
       options: options,
+      keepAlive: settings.keepAlive,
     );
 
     _streamSub = stream.listen(

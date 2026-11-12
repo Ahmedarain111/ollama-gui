@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme.dart';
+
 /// A compact, styled badge for displaying model metadata such as quantization or parameter size.
 class ModelBadge extends StatelessWidget {
   const ModelBadge({
@@ -13,26 +15,26 @@ class ModelBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final badgeColor = color ?? theme.colorScheme.primary;
+    final colors = context.appColors;
+    final isCustomColor = color != null;
+    final badgeColor = color ?? colors.textMuted;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: badgeColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
+        color: isCustomColor ? badgeColor.withValues(alpha: 0.12) : colors.surfaceHover,
+        borderRadius: AppRadius.r6,
         border: Border.all(
-          color: badgeColor.withValues(alpha: 0.3),
-          width: 0.8,
+          color: isCustomColor ? badgeColor.withValues(alpha: 0.4) : colors.border,
+          width: 1,
         ),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+        style: AppTypography.code(
+          size: 12,
+          weight: FontWeight.w500,
           color: badgeColor,
-          letterSpacing: 0.3,
         ),
       ),
     );

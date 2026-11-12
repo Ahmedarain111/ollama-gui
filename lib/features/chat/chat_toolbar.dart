@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/models.dart';
+import '../../core/theme.dart';
 import '../../database/database_provider.dart';
 import '../../shared/widgets/hover_icon_button.dart';
 import 'chat_context_bar.dart';
@@ -41,8 +42,7 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
     final convAsync = ref.watch(conversationsStreamProvider);
     final modelsAsync = ref.watch(installedModelsProvider);
     final selectedModel = ref.watch(selectedModelProvider);
@@ -60,12 +60,13 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
 
     return Container(
       height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: colors.surface,
         border: Border(
           bottom: BorderSide(
-            color: theme.dividerTheme.color ?? colorScheme.outlineVariant,
+            color: colors.border,
+            width: 1,
           ),
         ),
       ),
@@ -77,10 +78,20 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
                 ? TextField(
                     controller: _titleController,
                     autofocus: true,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                    decoration: const InputDecoration(
+                    style: AppTypography.ui(size: 13, weight: FontWeight.w500, color: colors.text),
+                    decoration: InputDecoration(
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      filled: true,
+                      fillColor: colors.surfaceHover,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      border: OutlineInputBorder(
+                        borderRadius: AppRadius.r8,
+                        borderSide: BorderSide(color: colors.border, width: 1),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: AppRadius.r8,
+                        borderSide: BorderSide(color: colors.accent, width: 2),
+                      ),
                     ),
                     onSubmitted: (newTitle) async {
                       if (newTitle.trim().isNotEmpty) {
@@ -105,10 +116,10 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
                           conv?.title ?? 'Conversation',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.onSurface,
+                          style: AppTypography.ui(
+                            size: 13,
+                            weight: FontWeight.w500,
+                            color: colors.text,
                           ),
                         ),
                       ),
@@ -141,7 +152,7 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
             error: (_, __) => const SizedBox.shrink(),
           ),
 
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
 
           // Inference Parameters & System Prompt Toggle
           HoverIconButton(
@@ -169,20 +180,20 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'rename',
-                height: 32,
-                child: Text('Rename chat', style: TextStyle(fontSize: 12.5)),
+                height: 36,
+                child: Text('Rename chat', style: AppTypography.ui(size: 13, color: colors.text)),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'export',
-                height: 32,
-                child: Text('Export as Markdown', style: TextStyle(fontSize: 12.5)),
+                height: 36,
+                child: Text('Export as Markdown', style: AppTypography.ui(size: 13, color: colors.text)),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'clear',
-                height: 32,
-                child: Text('Clear history', style: TextStyle(fontSize: 12.5, color: Colors.red)),
+                height: 36,
+                child: Text('Clear history', style: AppTypography.ui(size: 13, color: colors.error)),
               ),
             ],
           ),
@@ -267,13 +278,14 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
   }
 
   Future<void> _clearMessages(BuildContext context) async {
+    final colors = context.appColors;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Clear conversation?'),
-        content: const Text(
+        content: Text(
           'All messages in this session will be deleted.',
-          style: TextStyle(fontSize: 13),
+          style: AppTypography.ui(size: 13, color: colors.textMuted),
         ),
         actions: [
           TextButton(
@@ -281,7 +293,10 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.error,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Clear'),
           ),
@@ -313,7 +328,7 @@ class _HoverActionsMenuState extends State<_HoverActionsMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -324,53 +339,50 @@ class _HoverActionsMenuState extends State<_HoverActionsMenu> {
         itemBuilder: widget.itemBuilder,
         tooltip: '',
         padding: EdgeInsets.zero,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-          decoration: BoxDecoration(
-            color: _hovered
-                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.85)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: _hovered
-                  ? colorScheme.outline.withValues(alpha: 0.6)
-                  : Colors.transparent,
-              width: 0.8,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          child: AnimatedContainer(
+            duration: AppMotion.fast,
+            curve: AppMotion.curve,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: _hovered ? colors.surfaceHover : Colors.transparent,
+              borderRadius: AppRadius.r8,
+              border: Border.all(
+                color: _hovered ? colors.border : Colors.transparent,
+                width: 1,
+              ),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.more_horiz_rounded,
-                size: 16,
-                color: _hovered
-                    ? colorScheme.onSurface
-                    : colorScheme.onSurfaceVariant,
-              ),
-              ClipRect(
-                child: AnimatedSize(
-                  duration: const Duration(milliseconds: 160),
-                  curve: Curves.easeOutCubic,
-                  alignment: Alignment.centerLeft,
-                  child: _hovered
-                      ? Padding(
-                          padding: const EdgeInsets.only(left: 4),
-                          child: Text(
-                            'Actions',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w500,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                        )
-                      : const SizedBox.shrink(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.more_horiz_rounded,
+                  size: 16,
+                  color: _hovered ? colors.text : colors.textMuted,
                 ),
-              ),
-            ],
+                ClipRect(
+                  child: AnimatedSize(
+                    duration: AppMotion.fast,
+                    curve: AppMotion.curve,
+                    alignment: Alignment.centerLeft,
+                    child: _hovered
+                        ? Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: Text(
+                              'Actions',
+                              style: AppTypography.ui(
+                                size: 12,
+                                weight: FontWeight.w500,
+                                color: colors.text,
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -398,60 +410,78 @@ class _ModelSelectorDropdownState extends State<_ModelSelectorDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
+    final current = widget.models.any((m) => m.name == widget.selectedModel)
+        ? widget.selectedModel
+        : (widget.models.isNotEmpty ? widget.models.first.name : '');
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        curve: Curves.easeOutCubic,
-        height: 28,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: _hovered
-              ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.9)
-              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: _hovered
-                ? colorScheme.outline.withValues(alpha: 0.85)
-                : colorScheme.outline.withValues(alpha: 0.45),
-            width: 0.8,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        child: AnimatedContainer(
+          duration: AppMotion.fast,
+          curve: AppMotion.curve,
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: _hovered ? colors.surfaceHover : colors.surface,
+            borderRadius: AppRadius.r8,
+            border: Border.all(
+              color: _hovered ? colors.accent : colors.border,
+              width: 1,
+            ),
           ),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: widget.models.any((m) => m.name == widget.selectedModel)
-                ? widget.selectedModel
-                : widget.models.first.name,
-            isDense: true,
-            icon: Icon(
-              Icons.unfold_more_rounded,
-              size: 14,
-              color: _hovered
-                  ? colorScheme.onSurface
-                  : colorScheme.onSurfaceVariant,
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: current.isNotEmpty ? current : null,
+              isDense: true,
+              dropdownColor: colors.surface,
+              borderRadius: AppRadius.r12,
+              icon: Icon(
+                Icons.unfold_more_rounded,
+                size: 16,
+                color: _hovered ? colors.text : colors.textMuted,
+              ),
+              style: AppTypography.code(
+                size: 12,
+                color: colors.text,
+                weight: FontWeight.w500,
+              ),
+              items: widget.models.map((m) {
+                final isSelected = m.name == current;
+                return DropdownMenuItem<String>(
+                  value: m.name,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        m.name,
+                        style: AppTypography.code(
+                          size: 12,
+                          weight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                          color: isSelected ? colors.accent : colors.text,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        '${m.sizeGb}${m.details.parameterSize.isNotEmpty ? ' · ${m.details.parameterSize}' : ''}',
+                        style: AppTypography.code(
+                          size: 12,
+                          color: colors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: widget.onChanged,
             ),
-            style: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 11.5,
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w500,
-            ),
-            items: widget.models.map((m) {
-              return DropdownMenuItem(
-                value: m.name,
-                child: Text(m.name),
-              );
-            }).toList(),
-            onChanged: widget.onChanged,
           ),
         ),
       ),
     );
   }
 }
-
-

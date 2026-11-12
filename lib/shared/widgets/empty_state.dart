@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme.dart';
 
 /// Minimalist empty state with quiet typography and restrained iconography.
 class EmptyState extends StatelessWidget {
@@ -17,43 +18,43 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
               size: 28,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+              color: colors.textMuted,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
+              style: AppTypography.ui(
+                size: 14,
+                weight: FontWeight.w600,
+                color: colors.text,
                 letterSpacing: -0.2,
               ),
             ),
             if (subtitle != null) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 subtitle!,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                style: AppTypography.ui(
+                  size: 13,
+                  color: colors.textMuted,
                 ),
               ),
             ],
             if (action != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               action!,
             ],
           ],

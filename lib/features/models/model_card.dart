@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/models.dart';
+import '../../core/theme.dart';
 import '../chat/chat_providers.dart';
 import 'models_providers.dart';
 
@@ -15,17 +16,16 @@ class ModelCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
     final dateFormat = DateFormat.yMMMd();
 
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.6),
-          width: 0.8,
+          color: colors.border,
+          width: 1,
         ),
       ),
       padding: const EdgeInsets.all(14),
@@ -38,9 +38,10 @@ class ModelCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   model.name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                  style: AppTypography.ui(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    color: colors.text,
                     letterSpacing: -0.2,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -55,15 +56,15 @@ class ModelCard extends ConsumerWidget {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'info',
                     height: 32,
-                    child: Text('Inspect Modelfile', style: TextStyle(fontSize: 12.5)),
+                    child: Text('Inspect Modelfile', style: AppTypography.ui(size: 13, color: colors.text)),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'delete',
                     height: 32,
-                    child: Text('Delete model', style: TextStyle(fontSize: 12.5, color: Colors.red)),
+                    child: Text('Delete model', style: AppTypography.ui(size: 13, color: colors.error)),
                   ),
                 ],
               ),
@@ -95,9 +96,8 @@ class ModelCard extends ConsumerWidget {
             children: [
               Text(
                 dateFormat.format(model.modifiedAt),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                style: AppTypography.caption(
+                  color: colors.textMuted,
                 ),
               ),
               _StartChatButton(
@@ -114,11 +114,17 @@ class ModelCard extends ConsumerWidget {
   }
 
   void _showInfo(BuildContext context, WidgetRef ref) {
+    final colors = context.appColors;
     showDialog<void>(
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: Text(model.name, style: const TextStyle(fontSize: 15)),
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            side: BorderSide(color: colors.border, width: 1),
+          ),
+          title: Text(model.name, style: AppTypography.section(color: colors.text)),
           content: SizedBox(
             width: 480,
             height: 360,
@@ -126,12 +132,30 @@ class ModelCard extends ConsumerWidget {
               builder: (context, ref, _) {
                 final infoAsync = ref.watch(modelInfoProvider(model.name));
                 return infoAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                  error: (e, _) => Center(child: Text('Error: $e')),
-                  data: (info) => SingleChildScrollView(
-                    child: SelectableText(
-                      info.modelfile.isNotEmpty ? info.modelfile : info.template,
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 12, height: 1.5),
+                  loading: () => Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(colors.accent)),
+                    ),
+                  ),
+                  error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.caption(color: colors.error))),
+                  data: (info) => Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: colors.codeBg,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: colors.border, width: 1),
+                    ),
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        info.modelfile.isNotEmpty ? info.modelfile : info.template,
+                        style: AppTypography.code(
+                          size: 12,
+                          color: colors.text,
+                          height: 1.5,
+                        ),
+                      ),
                     ),
                   ),
                 );
@@ -141,7 +165,7 @@ class ModelCard extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
+              child: Text('Close', style: AppTypography.ui(size: 13, color: colors.textMuted)),
             ),
           ],
         );
@@ -150,23 +174,35 @@ class ModelCard extends ConsumerWidget {
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final colors = context.appColors;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Delete ${model.name}?'),
-        content: const Text(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          side: BorderSide(color: colors.border, width: 1),
+        ),
+        title: Text('Delete ${model.name}?', style: AppTypography.section(color: colors.text)),
+        content: Text(
           'This model will be removed from local storage.',
-          style: TextStyle(fontSize: 13),
+          style: AppTypography.ui(size: 13, color: colors.textMuted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: AppTypography.ui(size: 13, color: colors.textMuted)),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.error,
+              foregroundColor: colors.accentTextOn,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.button),
+              ),
+            ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: Text('Delete', style: AppTypography.button(color: colors.accentTextOn)),
           ),
         ],
       ),
@@ -185,24 +221,23 @@ class _Tag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(4),
+        color: colors.surfaceHover,
+        borderRadius: BorderRadius.circular(AppRadius.chip),
         border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.4),
-          width: 0.8,
+          color: colors.border,
+          width: 1,
         ),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 10.5,
-          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+        style: AppTypography.code(
+          size: 11,
+          color: colors.textMuted,
         ),
       ),
     );
@@ -227,7 +262,7 @@ class _HoverCardMenuState extends State<_HoverCardMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -237,21 +272,26 @@ class _HoverCardMenuState extends State<_HoverCardMenu> {
         onSelected: widget.onSelected,
         itemBuilder: widget.itemBuilder,
         tooltip: '',
+        color: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          side: BorderSide(color: colors.border, width: 1),
+        ),
         padding: EdgeInsets.zero,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          curve: Curves.easeOutCubic,
+          duration: AppMotion.shortDuration,
+          curve: AppMotion.standardCurve,
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
           decoration: BoxDecoration(
             color: _hovered
-                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.85)
+                ? colors.surfaceHover
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppRadius.chip),
             border: Border.all(
               color: _hovered
-                  ? colorScheme.outline.withValues(alpha: 0.6)
+                  ? colors.border
                   : Colors.transparent,
-              width: 0.8,
+              width: 1,
             ),
           ),
           child: Row(
@@ -261,23 +301,23 @@ class _HoverCardMenuState extends State<_HoverCardMenu> {
                 Icons.more_horiz_rounded,
                 size: 15,
                 color: _hovered
-                    ? colorScheme.onSurface
-                    : colorScheme.onSurfaceVariant,
+                    ? colors.text
+                    : colors.textMuted,
               ),
               ClipRect(
                 child: AnimatedSize(
-                  duration: const Duration(milliseconds: 160),
-                  curve: Curves.easeOutCubic,
+                  duration: AppMotion.shortDuration,
+                  curve: AppMotion.standardCurve,
                   alignment: Alignment.centerLeft,
                   child: _hovered
                       ? Padding(
                           padding: const EdgeInsets.only(left: 3),
                           child: Text(
                             'Options',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: colorScheme.onSurface,
+                            style: AppTypography.ui(
+                              size: 11,
+                              weight: FontWeight.w500,
+                              color: colors.text,
                             ),
                           ),
                         )
@@ -306,7 +346,7 @@ class _StartChatButtonState extends State<_StartChatButton> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -315,19 +355,19 @@ class _StartChatButtonState extends State<_StartChatButton> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          duration: AppMotion.shortDuration,
+          curve: AppMotion.standardCurve,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             color: _hovered
-                ? colorScheme.primary.withValues(alpha: 0.18)
-                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(6),
+                ? colors.accent.withValues(alpha: 0.15)
+                : colors.surfaceHover,
+            borderRadius: BorderRadius.circular(AppRadius.button),
             border: Border.all(
               color: _hovered
-                  ? colorScheme.primary.withValues(alpha: 0.6)
-                  : colorScheme.outline.withValues(alpha: 0.4),
-              width: 0.8,
+                  ? colors.accent
+                  : colors.border,
+              width: 1,
             ),
           ),
           child: Row(
@@ -335,14 +375,14 @@ class _StartChatButtonState extends State<_StartChatButton> {
             children: [
               Text(
                 'Start chat',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.primary,
+                style: AppTypography.ui(
+                  size: 12,
+                  weight: FontWeight.w500,
+                  color: colors.accent,
                 ),
               ),
               const SizedBox(width: 4),
-              Icon(Icons.arrow_forward_rounded, size: 12, color: colorScheme.primary),
+              Icon(Icons.arrow_forward_rounded, size: 12, color: colors.accent),
             ],
           ),
         ),

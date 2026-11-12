@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/hover_icon_button.dart';
 import '../chat/chat_providers.dart';
@@ -57,8 +58,8 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
+    final colorScheme = Theme.of(context).colorScheme;
     final modelsAsync = ref.watch(installedModelsProvider);
     final runningAsync = ref.watch(runningModelsProvider);
 
@@ -76,10 +77,10 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: colorScheme.surface,
+            color: colors.surface,
             border: Border(
               bottom: BorderSide(
-                color: theme.dividerTheme.color ?? colorScheme.outlineVariant,
+                color: colors.border,
                 width: 1,
               ),
             ),
@@ -88,13 +89,13 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
             children: [
               // Segmented toggle between Installed and Explore Library
               Container(
-                height: 30,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(8),
+                  color: colors.surfaceHover,
+                  borderRadius: BorderRadius.circular(AppRadius.chip),
                   border: Border.all(
-                    color: colorScheme.outline.withValues(alpha: 0.3),
-                    width: 0.8,
+                    color: colors.border,
+                    width: 1,
                   ),
                 ),
                 padding: const EdgeInsets.all(2),
@@ -126,25 +127,25 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                 ),
                 const SizedBox(width: 8),
                 FilledButton.icon(
-                  icon: const Icon(Icons.add_rounded, size: 15),
-                  label: const Text('Pull model', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500)),
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: Text('Pull model', style: AppTypography.button(color: colors.accentTextOn)),
                   style: FilledButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    backgroundColor: colors.accent,
+                    foregroundColor: colors.accentTextOn,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.button)),
                   ),
                   onPressed: () => _openPullDialog(context),
                 ),
               ] else ...[
                 FilledButton.icon(
-                  icon: const Icon(Icons.download_rounded, size: 15),
-                  label: const Text('Custom pull', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500)),
+                  icon: const Icon(Icons.download_rounded, size: 16),
+                  label: Text('Custom pull', style: AppTypography.button(color: colors.accentTextOn)),
                   style: FilledButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    backgroundColor: colors.accent,
+                    foregroundColor: colors.accentTextOn,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.button)),
                   ),
                   onPressed: () => _openPullDialog(context),
                 ),
@@ -169,21 +170,34 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
     AsyncValue<List<dynamic>> modelsAsync,
     AsyncValue<List<dynamic>> runningAsync,
   ) {
+    final colors = context.appColors;
+
     return modelsAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: SizedBox(
           width: 20,
           height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(colors.accent),
+          ),
         ),
       ),
       error: (err, _) => EmptyState(
         icon: Icons.error_outline_rounded,
         title: 'Connection error',
         subtitle: err.toString(),
-        action: FilledButton.tonal(
+        action: FilledButton(
           onPressed: () => ref.read(modelsNotifierProvider.notifier).refresh(),
-          child: const Text('Retry'),
+          style: FilledButton.styleFrom(
+            backgroundColor: colors.surfaceHover,
+            foregroundColor: colors.text,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.button),
+              side: BorderSide(color: colors.border, width: 1),
+            ),
+          ),
+          child: Text('Retry', style: AppTypography.button(color: colors.text)),
         ),
       ),
       data: (models) {
@@ -194,7 +208,12 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
             subtitle: 'Pull models from the Ollama library to get started.',
             action: FilledButton(
               onPressed: () => setState(() => _selectedTab = 1),
-              child: const Text('Explore Model Library'),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.accent,
+                foregroundColor: colors.accentTextOn,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.button)),
+              ),
+              child: Text('Explore Model Library', style: AppTypography.button(color: colors.accentTextOn)),
             ),
           );
         }
@@ -209,33 +228,33 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
               // Storage & Host Metrics Strip
               SliverToBoxAdapter(
                 child: Container(
-                  margin: const EdgeInsets.only(bottom: 14),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: BorderRadius.circular(6),
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                     border: Border.all(
-                      color: colorScheme.outline.withValues(alpha: 0.5),
-                      width: 0.8,
+                      color: colors.border,
+                      width: 1,
                     ),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.storage_rounded, size: 15, color: colorScheme.primary),
+                      Icon(Icons.storage_rounded, size: 16, color: colors.accent),
                       const SizedBox(width: 8),
                       Text(
                         'Local Storage: ',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
+                        style: AppTypography.ui(
+                          size: 13,
+                          weight: FontWeight.w600,
+                          color: colors.text,
                         ),
                       ),
                       Text(
                         '$totalGb GB in use across ${models.length} model${models.length == 1 ? '' : 's'}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
+                        style: AppTypography.ui(
+                          size: 13,
+                          color: colors.textMuted,
                         ),
                       ),
                       const Spacer(),
@@ -248,14 +267,14 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                             children: [
                               Text(
                                 'Explore 30+ Model Catalog',
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: colorScheme.primary,
+                                style: AppTypography.ui(
+                                  size: 12,
+                                  weight: FontWeight.w500,
+                                  color: colors.accent,
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              Icon(Icons.arrow_forward_rounded, size: 12, color: colorScheme.primary),
+                              Icon(Icons.arrow_forward_rounded, size: 13, color: colors.accent),
                             ],
                           ),
                         ),
@@ -271,33 +290,33 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                   if (running.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
                   return SliverToBoxAdapter(
                     child: Container(
-                      margin: const EdgeInsets.only(bottom: 14),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                       decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(6),
+                        color: colors.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.card),
                         border: Border.all(
-                          color: colorScheme.outline.withValues(alpha: 0.5),
-                          width: 0.8,
+                          color: colors.border,
+                          width: 1,
                         ),
                       ),
                       child: Row(
                         children: [
                           Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF10B981),
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: colors.success,
                               shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
                             'Loaded in VRAM: ',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: colorScheme.onSurface,
+                            style: AppTypography.ui(
+                              size: 13,
+                              weight: FontWeight.w500,
+                              color: colors.text,
                             ),
                           ),
                           Expanded(
@@ -306,10 +325,9 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                                   .map((m) =>
                                       '${m.name} (${(m.vramSize / 1e9).toStringAsFixed(1)} GB)')
                                   .join(', '),
-                              style: TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 11.5,
-                                color: colorScheme.onSurfaceVariant,
+                              style: AppTypography.code(
+                                size: 12,
+                                color: colors.textMuted,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -344,11 +362,11 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                     margin: const EdgeInsets.only(top: 24),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(10),
+                      color: colors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(
-                        color: colorScheme.outline.withValues(alpha: 0.45),
-                        width: 0.8,
+                        color: colors.border,
+                        width: 1,
                       ),
                     ),
                     child: Column(
@@ -356,21 +374,22 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.auto_awesome_rounded, size: 16, color: colorScheme.primary),
+                            Icon(Icons.auto_awesome_rounded, size: 16, color: colors.accent),
                             const SizedBox(width: 8),
                             Text(
                               'Expand Your Local AI Toolkit',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                                letterSpacing: -0.2,
+                              style: AppTypography.section(
+                                size: 14,
+                                color: colors.text,
                               ),
                             ),
                             const Spacer(),
                             TextButton.icon(
                               icon: const Icon(Icons.apps_rounded, size: 14),
-                              label: const Text('Browse Full Catalog', style: TextStyle(fontSize: 12)),
+                              label: Text(
+                                'Browse Full Catalog',
+                                style: AppTypography.ui(size: 12, color: colors.accent, weight: FontWeight.w500),
+                              ),
                               onPressed: () => setState(() => _selectedTab = 1),
                             ),
                           ],
@@ -378,9 +397,9 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                         const SizedBox(height: 6),
                         Text(
                           'Enhance reasoning, coding, and vision capabilities with popular open weights:',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                          style: AppTypography.ui(
+                            size: 12,
+                            color: colors.textMuted,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -426,6 +445,7 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
     ColorScheme colorScheme,
     AsyncValue<List<dynamic>> modelsAsync,
   ) {
+    final colors = context.appColors;
     final installedModelNames = modelsAsync.when(
       data: (models) => models.map((m) => (m.name as String).toLowerCase()).toSet(),
       loading: () => <String>{},
@@ -463,17 +483,17 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                   height: 36,
                   child: TextField(
                     controller: _searchController,
-                    style: const TextStyle(fontSize: 13),
+                    style: AppTypography.ui(size: 13, color: colors.text),
                     decoration: InputDecoration(
                       hintText: 'Search models by name, category, or publisher...',
-                      hintStyle: TextStyle(
-                        fontSize: 12.5,
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      hintStyle: AppTypography.ui(
+                        size: 13,
+                        color: colors.textMuted,
                       ),
                       prefixIcon: Icon(
                         Icons.search_rounded,
                         size: 16,
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                        color: colors.textMuted,
                       ),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? MouseRegion(
@@ -483,34 +503,25 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                                 child: Icon(
                                   Icons.close_rounded,
                                   size: 14,
-                                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                  color: colors.textMuted,
                                 ),
                               ),
                             )
                           : null,
                       filled: true,
-                      fillColor: colorScheme.surface,
+                      fillColor: colors.surface,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(6),
-                        borderSide: BorderSide(
-                          color: colorScheme.outline.withValues(alpha: 0.4),
-                          width: 0.8,
-                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.input),
+                        borderSide: BorderSide(color: colors.border, width: 1),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(6),
-                        borderSide: BorderSide(
-                          color: colorScheme.outline.withValues(alpha: 0.4),
-                          width: 0.8,
-                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.input),
+                        borderSide: BorderSide(color: colors.border, width: 1),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(6),
-                        borderSide: BorderSide(
-                          color: colorScheme.primary,
-                          width: 1.2,
-                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.input),
+                        borderSide: BorderSide(color: colors.accent, width: 1.5),
                       ),
                     ),
                   ),
@@ -532,26 +543,26 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                         child: GestureDetector(
                           onTap: () => setState(() => _selectedCategory = cat),
                           child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 140),
+                            duration: AppMotion.shortDuration,
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? colorScheme.primary.withValues(alpha: 0.15)
-                                  : colorScheme.surface,
-                              borderRadius: BorderRadius.circular(6),
+                                  ? colors.accent.withValues(alpha: 0.15)
+                                  : colors.surface,
+                              borderRadius: BorderRadius.circular(AppRadius.chip),
                               border: Border.all(
                                 color: isSelected
-                                    ? colorScheme.primary
-                                    : colorScheme.outline.withValues(alpha: 0.4),
-                                width: 0.8,
+                                    ? colors.accent
+                                    : colors.border,
+                                width: 1,
                               ),
                             ),
                             child: Text(
                               cat,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+                              style: AppTypography.ui(
+                                size: 12,
+                                weight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                                color: isSelected ? colors.accent : colors.textMuted,
                               ),
                             ),
                           ),
@@ -573,33 +584,38 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                     icon: Icons.search_off_rounded,
                     title: 'No models found',
                     subtitle: 'No models match your query "$_searchQuery".',
-                    action: FilledButton.tonal(
+                    action: FilledButton(
                       onPressed: () {
                         _searchController.clear();
                         setState(() => _selectedCategory = 'All');
                       },
-                      child: const Text('Reset filters'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colors.surfaceHover,
+                        foregroundColor: colors.text,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.button),
+                          side: BorderSide(color: colors.border, width: 1),
+                        ),
+                      ),
+                      child: Text('Reset filters', style: AppTypography.button(color: colors.text)),
                     ),
                   )
                 : GridView.builder(
                     padding: const EdgeInsets.only(bottom: 20),
                     gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: 420,
-                      mainAxisExtent: 175,
+                      mainAxisExtent: 185,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                     ),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final item = filtered[index];
-                      final isInstalled = installedModelNames.any(
-                        (name) => name == item.name || name.startsWith('${item.name}:'),
-                      );
 
                       return _LibraryModelCard(
                         model: item,
-                        isInstalled: isInstalled,
-                        onPull: () => _openPullDialog(context, initialModel: item.defaultTag),
+                        installedModelNames: installedModelNames,
+                        onPull: (tag) => _openPullDialog(context, initialModel: tag),
                       );
                     },
                   ),
@@ -630,7 +646,7 @@ class _TabPillState extends State<_TabPill> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -639,31 +655,26 @@ class _TabPillState extends State<_TabPill> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
+          duration: AppMotion.shortDuration,
+          curve: AppMotion.standardCurve,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: widget.isSelected
-                ? colorScheme.surface
+                ? colors.surface
                 : _hovered
-                    ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+                    ? colors.surfaceHover
                     : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
-            boxShadow: widget.isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 2,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
+            borderRadius: BorderRadius.circular(AppRadius.chip),
+            border: widget.isSelected
+                ? Border.all(color: colors.border, width: 1)
                 : null,
           ),
           child: Text(
             widget.label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: widget.isSelected ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
+            style: AppTypography.ui(
+              size: 12,
+              weight: widget.isSelected ? FontWeight.w500 : FontWeight.w400,
+              color: widget.isSelected ? colors.text : colors.textMuted,
             ),
           ),
         ),
@@ -675,13 +686,13 @@ class _TabPillState extends State<_TabPill> {
 class _LibraryModelCard extends StatefulWidget {
   const _LibraryModelCard({
     required this.model,
-    required this.isInstalled,
+    required this.installedModelNames,
     required this.onPull,
   });
 
   final LibraryModel model;
-  final bool isInstalled;
-  final VoidCallback onPull;
+  final Set<String> installedModelNames;
+  final void Function(String tag) onPull;
 
   @override
   State<_LibraryModelCard> createState() => _LibraryModelCardState();
@@ -689,44 +700,62 @@ class _LibraryModelCard extends StatefulWidget {
 
 class _LibraryModelCardState extends State<_LibraryModelCard> {
   bool _hovered = false;
+  late String _selectedSize;
 
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'Reasoning':
-        return const Color(0xFF8B5CF6);
-      case 'Coding':
-        return const Color(0xFF0EA5E9);
-      case 'Vision':
-        return const Color(0xFFF59E0B);
-      case 'Embedding':
-        return const Color(0xFF10B981);
-      default:
-        return const Color(0xFF6366F1);
+  @override
+  void initState() {
+    super.initState();
+    _initSelectedSize();
+  }
+
+  @override
+  void didUpdateWidget(covariant _LibraryModelCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.model.name != widget.model.name) {
+      _initSelectedSize();
     }
+  }
+
+  void _initSelectedSize() {
+    final defaultParts = widget.model.defaultTag.split(':');
+    final tagSize = defaultParts.length > 1 ? defaultParts.last : '';
+    if (widget.model.sizes.contains(tagSize)) {
+      _selectedSize = tagSize;
+    } else if (widget.model.sizes.isNotEmpty) {
+      _selectedSize = widget.model.sizes.first;
+    } else {
+      _selectedSize = 'latest';
+    }
+  }
+
+  bool _isVariantInstalled(String size) {
+    final fullTag = '${widget.model.name}:$size'.toLowerCase();
+    final cleanName = widget.model.name.toLowerCase();
+    return widget.installedModelNames.contains(fullTag) ||
+        (size == 'latest' && widget.installedModelNames.contains(cleanName));
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final catColor = _getCategoryColor(widget.model.category);
+    final colors = context.appColors;
+    final isSelectedInstalled = _isVariantInstalled(_selectedSize);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: AppMotion.shortDuration,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: _hovered
-              ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
-              : colorScheme.surface,
-          borderRadius: BorderRadius.circular(8),
+              ? colors.surfaceHover
+              : colors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(
             color: _hovered
-                ? colorScheme.primary.withValues(alpha: 0.5)
-                : colorScheme.outline.withValues(alpha: 0.4),
-            width: 0.8,
+                ? colors.accent.withValues(alpha: 0.5)
+                : colors.border,
+            width: 1,
           ),
         ),
         child: Column(
@@ -741,10 +770,10 @@ class _LibraryModelCardState extends State<_LibraryModelCard> {
                       Flexible(
                         child: Text(
                           widget.model.name,
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
+                          style: AppTypography.ui(
+                            size: 14,
+                            weight: FontWeight.w600,
+                            color: colors.text,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -752,9 +781,8 @@ class _LibraryModelCardState extends State<_LibraryModelCard> {
                       const SizedBox(width: 6),
                       Text(
                         '· ${widget.model.publisher}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        style: AppTypography.caption(
+                          color: colors.textMuted,
                         ),
                       ),
                     ],
@@ -764,20 +792,19 @@ class _LibraryModelCardState extends State<_LibraryModelCard> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: catColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(4),
+                    color: colors.surfaceHover,
+                    borderRadius: BorderRadius.circular(AppRadius.chip),
                     border: Border.all(
-                      color: catColor.withValues(alpha: 0.4),
-                      width: 0.6,
+                      color: colors.border,
+                      width: 1,
                     ),
                   ),
                   child: Text(
                     widget.model.category,
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: catColor,
+                    style: AppTypography.code(
+                      size: 10,
+                      weight: FontWeight.w500,
+                      color: colors.textMuted,
                     ),
                   ),
                 ),
@@ -792,89 +819,178 @@ class _LibraryModelCardState extends State<_LibraryModelCard> {
                 widget.model.description,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11.5,
+                style: AppTypography.ui(
+                  size: 12,
                   height: 1.4,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  color: colors.textMuted,
                 ),
               ),
             ),
 
             const SizedBox(height: 8),
 
-            // Bottom row: parameter size pills + Pull action
+            // Bottom section: Weight Variant selector + Pull / Installed Action
             Row(
               children: [
+                // Scrollable weight variant pills
                 Expanded(
-                  child: Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: widget.model.sizes.take(4).map((size) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          size,
-                          style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 10,
-                            color: colorScheme.onSurfaceVariant,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: widget.model.sizes.map((size) {
+                        final isSelected = size == _selectedSize;
+                        final isInstalled = _isVariantInstalled(size);
+
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 5),
+                          child: _SizeVariantChip(
+                            size: size,
+                            isSelected: isSelected,
+                            isInstalled: isInstalled,
+                            onTap: () => setState(() => _selectedSize = size),
                           ),
-                        ),
-                      );
-                    }).toList(),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
 
                 const SizedBox(width: 8),
 
-                if (widget.isInstalled)
+                // Pull or Installed Status
+                if (isSelectedInstalled)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(4),
+                      color: colors.success.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.chip),
                       border: Border.all(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.4),
-                        width: 0.6,
+                        color: colors.success.withValues(alpha: 0.4),
+                        width: 1,
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check_rounded, size: 12, color: Color(0xFF10B981)),
-                        SizedBox(width: 3),
+                        Icon(Icons.check_rounded, size: 13, color: colors.success),
+                        const SizedBox(width: 4),
                         Text(
                           'Installed',
-                          style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF10B981),
+                          style: AppTypography.code(
+                            size: 11,
+                            weight: FontWeight.w500,
+                            color: colors.success,
                           ),
                         ),
                       ],
                     ),
                   )
                 else
-                  FilledButton.tonalIcon(
+                  FilledButton.icon(
                     icon: const Icon(Icons.download_rounded, size: 14),
                     label: Text(
-                      'Pull ${widget.model.defaultTag.split(':').last}',
-                      style: const TextStyle(fontSize: 11),
+                      'Pull $_selectedSize',
+                      style: AppTypography.button(),
                     ),
                     style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                      backgroundColor: colors.surfaceHover,
+                      foregroundColor: colors.text,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.button),
+                        side: BorderSide(color: colors.border, width: 1),
+                      ),
                     ),
-                    onPressed: widget.onPull,
+                    onPressed: () => widget.onPull('${widget.model.name}:$_selectedSize'),
                   ),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SizeVariantChip extends StatefulWidget {
+  const _SizeVariantChip({
+    required this.size,
+    required this.isSelected,
+    required this.isInstalled,
+    required this.onTap,
+  });
+
+  final String size;
+  final bool isSelected;
+  final bool isInstalled;
+  final VoidCallback onTap;
+
+  @override
+  State<_SizeVariantChip> createState() => _SizeVariantChipState();
+}
+
+class _SizeVariantChipState extends State<_SizeVariantChip> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    Color bg;
+    Color border;
+    Color text;
+
+    if (widget.isSelected) {
+      bg = colors.accent.withValues(alpha: 0.15);
+      border = colors.accent;
+      text = colors.accent;
+    } else if (_hovered) {
+      bg = colors.surfaceHover;
+      border = colors.accent.withValues(alpha: 0.5);
+      text = colors.text;
+    } else {
+      bg = colors.surfaceHover;
+      border = widget.isInstalled ? colors.success.withValues(alpha: 0.4) : colors.border;
+      text = widget.isInstalled ? colors.success : colors.textMuted;
+    }
+
+    return Tooltip(
+      message: widget.isInstalled ? '${widget.size} (Installed)' : 'Select ${widget.size} variant',
+      waitDuration: const Duration(milliseconds: 500),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: AppMotion.shortDuration,
+            curve: AppMotion.standardCurve,
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(AppRadius.chip),
+              border: Border.all(color: border, width: 1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.isInstalled && !widget.isSelected) ...[
+                  Icon(Icons.check_rounded, size: 10, color: colors.success),
+                  const SizedBox(width: 3),
+                ],
+                Text(
+                  widget.size,
+                  style: AppTypography.code(
+                    size: 11,
+                    weight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: text,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -901,7 +1017,7 @@ class _QuickPullChipState extends State<_QuickPullChip> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -910,18 +1026,19 @@ class _QuickPullChipState extends State<_QuickPullChip> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
+          duration: AppMotion.shortDuration,
+          curve: AppMotion.standardCurve,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: _hovered
-                ? colorScheme.surfaceContainerHighest
-                : colorScheme.surface,
-            borderRadius: BorderRadius.circular(6),
+                ? colors.surfaceHover
+                : colors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.chip),
             border: Border.all(
               color: _hovered
-                  ? colorScheme.primary.withValues(alpha: 0.6)
-                  : colorScheme.outline.withValues(alpha: 0.5),
-              width: 0.8,
+                  ? colors.accent.withValues(alpha: 0.6)
+                  : colors.border,
+              width: 1,
             ),
           ),
           child: Row(
@@ -930,30 +1047,29 @@ class _QuickPullChipState extends State<_QuickPullChip> {
               Icon(
                 Icons.add_circle_outline_rounded,
                 size: 14,
-                color: _hovered ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                color: _hovered ? colors.accent : colors.textMuted,
               ),
               const SizedBox(width: 6),
               Text(
                 widget.name,
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _hovered ? colorScheme.primary : colorScheme.onSurface,
+                style: AppTypography.code(
+                  size: 12,
+                  weight: FontWeight.w500,
+                  color: _hovered ? colors.accent : colors.text,
                 ),
               ),
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(3),
+                  color: colors.surfaceHover,
+                  borderRadius: BorderRadius.circular(AppRadius.chip),
+                  border: Border.all(color: colors.border, width: 1),
                 ),
                 child: Text(
                   widget.tag,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    color: colorScheme.onSurfaceVariant,
+                  style: AppTypography.caption(
+                    color: colors.textMuted,
                   ),
                 ),
               ),

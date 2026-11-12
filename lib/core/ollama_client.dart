@@ -140,6 +140,7 @@ class OllamaClient {
     required String model,
     required List<ChatMessage> messages,
     Map<String, dynamic>? options,
+    String? keepAlive,
   }) async* {
     _streamCancelToken = CancelToken();
 
@@ -153,6 +154,7 @@ class OllamaClient {
           'messages': messages.map((m) => m.toJson()).toList(),
           'stream': true,
           if (options != null) 'options': options,
+          if (keepAlive != null && keepAlive.isNotEmpty) 'keep_alive': keepAlive,
         },
         options: Options(responseType: ResponseType.stream),
       );

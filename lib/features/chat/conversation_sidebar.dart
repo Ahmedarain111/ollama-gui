@@ -1,13 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:intl/intl.dart';
 
+import '../../core/theme.dart';
 import '../../database/database.dart';
 import '../../database/database_provider.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/hover_icon_button.dart';
+import '../settings/settings_providers.dart';
 import 'chat_providers.dart';
 
 /// Minimalist, high-density conversation sidebar (220px).
@@ -46,47 +50,43 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
     final convAsync = ref.watch(conversationsStreamProvider);
     final activeId = ref.watch(activeConversationProvider);
 
     return Container(
       width: 220,
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: colors.bgSidebar,
         border: Border(
-          right: BorderSide(color: theme.dividerTheme.color ?? colorScheme.outlineVariant),
+          right: BorderSide(color: colors.border, width: 1),
         ),
       ),
       child: Column(
         children: [
           // New Chat Action Bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
             child: _NewChatButton(onTap: _showNewChatDialog),
           ),
 
           // Conversation Search Bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
             child: SizedBox(
-              height: 30,
+              height: 32,
               child: TextField(
                 controller: _searchController,
-                style: const TextStyle(fontSize: 12),
+                style: AppTypography.ui(size: 13, color: colors.text),
                 decoration: InputDecoration(
                   hintText: 'Search chats...',
-                  hintStyle: TextStyle(
-                    fontSize: 11.5,
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                  ),
+                  hintStyle: AppTypography.ui(size: 13, color: colors.textMuted),
                   prefixIcon: Icon(
                     Icons.search_rounded,
-                    size: 14,
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    size: 16,
+                    color: colors.textMuted,
                   ),
-                  prefixIconConstraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? MouseRegion(
                           cursor: SystemMouseCursors.click,
@@ -94,36 +94,27 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
                             onTap: () => _searchController.clear(),
                             child: Icon(
                               Icons.close_rounded,
-                              size: 13,
-                              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                              size: 14,
+                              color: colors.textMuted,
                             ),
                           ),
                         )
                       : null,
-                  suffixIconConstraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  suffixIconConstraints: const BoxConstraints(minWidth: 26, minHeight: 26),
                   filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                  fillColor: colors.surface,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(
-                      color: colorScheme.outline.withValues(alpha: 0.3),
-                      width: 0.8,
-                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.input),
+                    borderSide: BorderSide(color: colors.border, width: 1),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(
-                      color: colorScheme.outline.withValues(alpha: 0.3),
-                      width: 0.8,
-                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.input),
+                    borderSide: BorderSide(color: colors.border, width: 1),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(
-                      color: colorScheme.primary,
-                      width: 1,
-                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.input),
+                    borderSide: BorderSide(color: colors.accent, width: 1.5),
                   ),
                 ),
               ),
@@ -133,17 +124,20 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
           // Conversation List
           Expanded(
             child: convAsync.when(
-              loading: () => const Center(
+              loading: () => Center(
                 child: SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 1.5),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(colors.accent),
+                  ),
                 ),
               ),
               error: (e, _) => Center(
                 child: Text(
                   'Error loading chats',
-                  style: TextStyle(fontSize: 11, color: colorScheme.error),
+                  style: AppTypography.caption(color: colors.error),
                 ),
               ),
               data: (conversations) {
@@ -171,7 +165,7 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   itemCount: filtered.length,
                   itemBuilder: (ctx, i) {
                     final conv = filtered[i];
@@ -207,25 +201,35 @@ class _ConversationSidebarState extends ConsumerState<ConversationSidebar> {
   }
 
   Future<void> _deleteConversation(Conversation conv) async {
+    final colors = context.appColors;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete conversation?'),
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          side: BorderSide(color: colors.border, width: 1),
+        ),
+        title: Text('Delete conversation?', style: AppTypography.section(color: colors.text)),
         content: Text(
           'Delete "${conv.title}" and its messages permanently.',
-          style: const TextStyle(fontSize: 13),
+          style: AppTypography.ui(size: 13, color: colors.textMuted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: AppTypography.ui(size: 13, color: colors.textMuted)),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
+              backgroundColor: colors.error,
+              foregroundColor: colors.accentTextOn,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.button),
+              ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: Text('Delete', style: AppTypography.button(color: colors.accentTextOn)),
           ),
         ],
       ),
@@ -262,14 +266,13 @@ class _ConversationRowState extends State<_ConversationRow> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
 
     final isActive = widget.isSelected;
     final rowBg = isActive
-        ? colorScheme.surfaceContainerHighest
+        ? colors.surfaceHover
         : _hovered
-            ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+            ? colors.surfaceHover.withValues(alpha: 0.6)
             : Colors.transparent;
 
     final shortModel = widget.conversation.model.split(':').first;
@@ -281,27 +284,32 @@ class _ConversationRowState extends State<_ConversationRow> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          margin: const EdgeInsets.symmetric(vertical: 1.5),
+          duration: AppMotion.shortDuration,
+          curve: AppMotion.standardCurve,
+          margin: const EdgeInsets.symmetric(vertical: 2),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
           decoration: BoxDecoration(
             color: rowBg,
-            borderRadius: BorderRadius.circular(6),
-            border: isActive
-                ? Border.all(
-                    color: colorScheme.outline.withValues(alpha: 0.8),
-                    width: 0.8,
-                  )
-                : (_hovered
-                    ? Border.all(
-                        color: colorScheme.outline.withValues(alpha: 0.5),
-                        width: 0.8,
-                      )
-                    : Border.all(color: Colors.transparent, width: 0.8)),
+            borderRadius: BorderRadius.circular(AppRadius.button),
+            border: Border.all(
+              color: isActive
+                  ? colors.accent.withValues(alpha: 0.4)
+                  : (_hovered ? colors.border : Colors.transparent),
+              width: 1,
+            ),
           ),
           child: Row(
             children: [
+              if (isActive)
+                Container(
+                  width: 3,
+                  height: 16,
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(
+                    color: colors.accent,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,12 +318,12 @@ class _ConversationRowState extends State<_ConversationRow> {
                       widget.conversation.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                      style: AppTypography.ui(
+                        size: 13,
+                        weight: isActive ? FontWeight.w500 : FontWeight.w400,
                         color: isActive
-                            ? colorScheme.onSurface
-                            : colorScheme.onSurface.withValues(alpha: 0.85),
+                            ? colors.text
+                            : colors.text.withValues(alpha: 0.9),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -323,18 +331,16 @@ class _ConversationRowState extends State<_ConversationRow> {
                       children: [
                         Text(
                           shortModel,
-                          style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 10,
-                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          style: AppTypography.code(
+                            size: 11,
+                            color: colors.textMuted,
                           ),
                         ),
                         const SizedBox(width: 6),
                         Text(
                           '· ${_relativeTime(widget.conversation.updatedAt)}',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          style: AppTypography.caption(
+                            color: colors.textMuted,
                           ),
                         ),
                       ],
@@ -349,11 +355,11 @@ class _ConversationRowState extends State<_ConversationRow> {
                   label: 'Delete',
                   iconSize: 13,
                   fontSize: 11,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                  hoverColor: colorScheme.error,
-                  hoverBackgroundColor: colorScheme.error.withValues(alpha: 0.15),
+                  color: colors.textMuted,
+                  hoverColor: colors.error,
+                  hoverBackgroundColor: colors.error.withValues(alpha: 0.12),
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  borderRadius: 4,
+                  borderRadius: AppRadius.chip,
                   onTap: widget.onDelete,
                 ),
             ],
@@ -395,10 +401,16 @@ class _NewChatDialogState extends ConsumerState<_NewChatDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final modelsAsync = ref.watch(installedModelsProvider);
 
     return AlertDialog(
-      title: const Text('New Conversation'),
+      backgroundColor: colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: BorderSide(color: colors.border, width: 1),
+      ),
+      title: Text('New Conversation', style: AppTypography.section(color: colors.text)),
       content: SizedBox(
         width: 320,
         child: Column(
@@ -408,36 +420,49 @@ class _NewChatDialogState extends ConsumerState<_NewChatDialog> {
             TextField(
               controller: _titleController,
               autofocus: true,
-              style: const TextStyle(fontSize: 13),
-              decoration: const InputDecoration(
+              style: AppTypography.ui(size: 13, color: colors.text),
+              decoration: InputDecoration(
                 labelText: 'Conversation Title',
+                labelStyle: AppTypography.ui(size: 13, color: colors.textMuted),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Model',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+              style: AppTypography.ui(size: 12, weight: FontWeight.w500, color: colors.text),
             ),
             const SizedBox(height: 6),
             modelsAsync.when(
-              loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text('Error: $e', style: const TextStyle(fontSize: 12)),
+              loading: () => LinearProgressIndicator(
+                minHeight: 2,
+                backgroundColor: colors.border,
+                valueColor: AlwaysStoppedAnimation<Color>(colors.accent),
+              ),
+              error: (e, _) => Text('Error: $e', style: AppTypography.caption(color: colors.error)),
               data: (models) {
                 if (models.isEmpty) {
-                  return const Text(
+                  return Text(
                     'No models installed. Go to Models tab to pull one.',
-                    style: TextStyle(fontSize: 12),
+                    style: AppTypography.caption(color: colors.textMuted),
                   );
                 }
-                _selectedModel ??= models.first.name;
+                final defaultModel = ref.read(settingsNotifierProvider).defaultModel;
+                if (_selectedModel == null) {
+                  if (defaultModel != null && models.any((m) => m.name == defaultModel)) {
+                    _selectedModel = defaultModel;
+                  } else {
+                    _selectedModel = models.first.name;
+                  }
+                }
                 return DropdownButtonFormField<String>(
                   initialValue: _selectedModel,
-                  style: const TextStyle(fontSize: 13),
+                  style: AppTypography.ui(size: 13, color: colors.text),
+                  dropdownColor: colors.surface,
                   items: models
                       .map(
                         (m) => DropdownMenuItem(
                           value: m.name,
-                          child: Text(m.name),
+                          child: Text(m.name, style: AppTypography.ui(size: 13, color: colors.text)),
                         ),
                       )
                       .toList(),
@@ -451,11 +476,16 @@ class _NewChatDialogState extends ConsumerState<_NewChatDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text('Cancel', style: AppTypography.ui(size: 13, color: colors.textMuted)),
         ),
         FilledButton(
           onPressed: _selectedModel == null ? null : _create,
-          child: const Text('Create'),
+          style: FilledButton.styleFrom(
+            backgroundColor: colors.accent,
+            foregroundColor: colors.accentTextOn,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.button)),
+          ),
+          child: Text('Create', style: AppTypography.button(color: colors.accentTextOn)),
         ),
       ],
     );
@@ -463,7 +493,19 @@ class _NewChatDialogState extends ConsumerState<_NewChatDialog> {
 
   Future<void> _create() async {
     final db = ref.read(appDatabaseProvider);
+    final settings = ref.read(settingsNotifierProvider);
     final now = DateTime.now();
+
+    final paramPreset = jsonEncode({
+      'temperature': settings.defaultTemperature,
+      'top_p': settings.defaultTopP,
+      'repeat_penalty': settings.defaultRepeatPenalty,
+      'num_ctx': settings.defaultNumCtx,
+    });
+    final systemPrompt = settings.defaultSystemPrompt.trim().isEmpty
+        ? null
+        : settings.defaultSystemPrompt.trim();
+
     final id = await db.insertConversation(
       ConversationsCompanion(
         title: Value(_titleController.text.trim().isEmpty
@@ -472,6 +514,8 @@ class _NewChatDialogState extends ConsumerState<_NewChatDialog> {
         model: Value(_selectedModel!),
         createdAt: Value(now),
         updatedAt: Value(now),
+        systemPrompt: Value(systemPrompt),
+        paramPreset: Value(paramPreset),
       ),
     );
     if (mounted) {
@@ -495,7 +539,7 @@ class _NewChatButtonState extends State<_NewChatButton> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -504,47 +548,48 @@ class _NewChatButtonState extends State<_NewChatButton> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
+          duration: AppMotion.shortDuration,
+          curve: AppMotion.standardCurve,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
-            color: _hovered
-                ? colorScheme.surfaceContainerHighest
-                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(6),
+            color: _hovered ? colors.surfaceHover : colors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.button),
             border: Border.all(
-              color: _hovered
-                  ? colorScheme.outline.withValues(alpha: 0.8)
-                  : colorScheme.outline.withValues(alpha: 0.4),
-              width: 0.8,
+              color: _hovered ? colors.accent.withValues(alpha: 0.6) : colors.border,
+              width: 1,
             ),
           ),
           child: Row(
             children: [
               Icon(
                 Icons.add_rounded,
-                size: 15,
-                color: _hovered ? colorScheme.primary : colorScheme.onSurface,
+                size: 16,
+                color: _hovered ? colors.accent : colors.text,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'New chat',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: _hovered ? FontWeight.w600 : FontWeight.w500,
-                    color: colorScheme.onSurface,
+                  style: AppTypography.ui(
+                    size: 13,
+                    weight: _hovered ? FontWeight.w600 : FontWeight.w500,
+                    color: colors.text,
                   ),
                 ),
               ),
-              Text(
-                'Ctrl N',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: _hovered
-                      ? colorScheme.onSurfaceVariant
-                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                  fontFamily: 'monospace',
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: colors.bgSidebar,
+                  borderRadius: BorderRadius.circular(AppRadius.chip),
+                  border: Border.all(color: colors.border, width: 1),
+                ),
+                child: Text(
+                  'Ctrl N',
+                  style: AppTypography.code(
+                    size: 10,
+                    color: colors.textMuted,
+                  ),
                 ),
               ),
             ],

@@ -8,12 +8,16 @@ import 'package:flutter_highlight/themes/atom-one-light.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/theme.dart';
 import '../../database/database.dart';
+import '../settings/settings_providers.dart';
 import 'chat_media_helper.dart';
 
 /// Minimalist, document-like message presentation.
 /// Assistant responses are rendered as clean editorial prose.
-class ChatMessageBubble extends StatefulWidget {
+class ChatMessageBubble extends ConsumerStatefulWidget {
   const ChatMessageBubble({
     super.key,
     required this.message,
@@ -24,52 +28,41 @@ class ChatMessageBubble extends StatefulWidget {
   final bool isStreaming;
 
   @override
-  State<ChatMessageBubble> createState() => _ChatMessageBubbleState();
+  ConsumerState<ChatMessageBubble> createState() => _ChatMessageBubbleState();
 }
 
-class _ChatMessageBubbleState extends State<ChatMessageBubble> {
+class _ChatMessageBubbleState extends ConsumerState<ChatMessageBubble> {
   bool _hovered = false;
 
   bool get _isUser => widget.message.role == 'user';
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+    final settings = ref.watch(settingsNotifierProvider);
+    final fontSize = settings.chatFontSize;
+    final showStats = settings.showGenerationStats;
 
-    return TweenAnimationBuilder<double>(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutCubic,
-      tween: Tween<double>(begin: 0.0, end: 1.0),
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, (1 - value) * 6),
-            child: child,
-          ),
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: MouseRegion(
-          onEnter: (_) => setState(() => _hovered = true),
-          onExit: (_) => setState(() => _hovered = false),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 780),
-              child: _isUser
-                  ? _UserMessage(content: widget.message.content)
-                  : _AssistantMessage(
-                      content: widget.message.content,
-                      message: widget.message,
-                      isStreaming: widget.isStreaming,
-                      isDark: isDark,
-                      colorScheme: colorScheme,
-                      isHovered: _hovered,
-                    ),
-            ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 780),
+            child: _isUser
+                ? _UserMessage(
+                    content: widget.message.content,
+                    fontSize: fontSize,
+                  )
+                : _AssistantMessage(
+                    content: widget.message.content,
+                    message: widget.message,
+                    isStreaming: widget.isStreaming,
+                    isHovered: _hovered,
+                    fontSize: fontSize,
+                    showStats: showStats,
+                  ),
           ),
         ),
       ),
@@ -78,26 +71,30 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
 }
 
 class _UserMessage extends StatelessWidget {
-  const _UserMessage({required this.content});
+  const _UserMessage({
+    required this.content,
+    required this.fontSize,
+  });
 
   final String content;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
     final parsed = parseMessageContent(content);
 
     return Align(
       alignment: Alignment.centerRight,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 620),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(10),
+          color: colors.surface,
+          borderRadius: AppRadius.r12,
           border: Border.all(
-            color: colorScheme.outline.withValues(alpha: 0.5),
-            width: 0.8,
+            color: colors.border,
+            width: 1,
           ),
         ),
         child: Column(
@@ -112,7 +109,7 @@ class _UserMessage extends StatelessWidget {
                   try {
                     final bytes = base64Decode(imgBase64);
                     return ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: AppRadius.r8,
                       child: Image.memory(
                         bytes,
                         width: 140,
@@ -130,10 +127,10 @@ class _UserMessage extends StatelessWidget {
             if (parsed.text.isNotEmpty)
               SelectableText(
                 parsed.text,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.55,
-                  color: colorScheme.onSurface,
+                style: AppTypography.ui(
+                  size: fontSize,
+                  height: 1.6,
+                  color: colors.text,
                 ),
               ),
           ],
@@ -148,138 +145,175 @@ class _AssistantMessage extends StatelessWidget {
     required this.content,
     required this.message,
     required this.isStreaming,
-    required this.isDark,
-    required this.colorScheme,
     required this.isHovered,
+    required this.fontSize,
+    required this.showStats,
   });
 
   final String content;
   final Message message;
   final bool isStreaming;
-  final bool isDark;
-  final ColorScheme colorScheme;
   final bool isHovered;
+  final double fontSize;
+  final bool showStats;
 
   @override
   Widget build(BuildContext context) {
-    final displayContent = isStreaming ? '$content▍' : content;
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Editorial Markdown Prose
         MarkdownBody(
-          data: displayContent,
+          data: content,
           selectable: true,
           styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-            p: TextStyle(
-              fontSize: 14,
-              height: 1.65,
-              color: colorScheme.onSurface,
+            p: AppTypography.ui(
+              size: fontSize,
+              height: 1.6,
+              color: colors.text,
             ),
-            h1: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.3,
-              color: colorScheme.onSurface,
+            h1: AppTypography.ui(
+              size: 22,
+              weight: FontWeight.w600,
+              color: colors.text,
             ),
-            h2: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+            h2: AppTypography.ui(
+              size: 18,
+              weight: FontWeight.w600,
+              color: colors.text,
+            ),
+            h3: AppTypography.ui(
+              size: fontSize,
+              weight: FontWeight.w600,
+              color: colors.text,
+            ),
+            listBullet: AppTypography.ui(
+              size: fontSize,
+              color: colors.text,
+            ),
+            a: TextStyle(
+              fontFamily: AppTypography.uiFontFamily,
+              fontSize: 15,
+              color: colors.accent,
+              decoration: TextDecoration.underline,
+            ),
+            code: AppTypography.code(
+              size: 13,
+              color: colors.text,
               letterSpacing: -0.2,
-              color: colorScheme.onSurface,
-            ),
-            h3: TextStyle(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
-            ),
-            code: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 12.5,
-              backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
             ),
             codeblockDecoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1F26) : const Color(0xFFF6F6F8),
-              borderRadius: BorderRadius.circular(6),
+              color: colors.codeBg,
+              borderRadius: AppRadius.r12,
               border: Border.all(
-                color: colorScheme.outline.withValues(alpha: 0.6),
-                width: 0.8,
+                color: colors.border,
+                width: 1,
               ),
             ),
-            codeblockPadding: const EdgeInsets.all(14),
+            codeblockPadding: const EdgeInsets.all(16),
             blockquoteDecoration: BoxDecoration(
               border: Border(
                 left: BorderSide(
-                  color: colorScheme.primary.withValues(alpha: 0.6),
-                  width: 2.5,
+                  color: colors.border,
+                  width: 3,
                 ),
               ),
             ),
-            blockquotePadding: const EdgeInsets.only(left: 14),
-            tableBorder: TableBorder.all(
-              color: colorScheme.outline.withValues(alpha: 0.4),
-              width: 0.8,
+            blockquotePadding: const EdgeInsets.only(left: 16, top: 4, bottom: 4),
+            blockquote: AppTypography.ui(
+              size: 15,
+              height: 1.6,
+              color: colors.textMuted,
             ),
+            tableBorder: TableBorder.all(
+              color: colors.border,
+              width: 1,
+            ),
+            tableHead: AppTypography.ui(
+              size: 13,
+              weight: FontWeight.w600,
+              color: colors.text,
+            ),
+            tableBody: AppTypography.ui(
+              size: 13,
+              color: colors.text,
+            ),
+            tableCellsPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
           builders: {
-            'code': _CodeBlockBuilder(isDark: isDark, colorScheme: colorScheme),
+            'code': _CodeBlockBuilder(isDark: isDark, colors: colors),
           },
         ),
 
-        // Monospace Metadata & Quick Copy
+        // Subtle blinking caret when streaming
+        if (isStreaming)
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: _BlinkingCaret(),
+          ),
+
+        // Monospace Metadata & Hover Actions
         if (!isStreaming)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: 12),
             child: Row(
               children: [
-                if (message.tokensPerSec != null)
+                if (showStats && message.tokensPerSec != null && message.tokensPerSec! > 0)
                   Text(
                     '${message.tokensPerSec!.toStringAsFixed(1)} tok/s · ${message.totalTokens ?? 0} tokens',
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 11,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    style: AppTypography.code(
+                      size: 12,
+                      color: colors.textMuted,
                     ),
                   ),
 
                 const Spacer(),
 
                 AnimatedOpacity(
-                  duration: const Duration(milliseconds: 140),
+                  duration: AppMotion.fast,
                   opacity: isHovered ? 1.0 : 0.0,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(4),
+                  child: FocusableActionDetector(
                     mouseCursor: SystemMouseCursors.click,
-                    hoverColor: colorScheme.surfaceContainerHighest,
-                    onTap: () {
-                      Clipboard.setData(ClipboardData(text: message.content));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Copied response'),
-                          duration: Duration(seconds: 1),
+                    child: InkWell(
+                      borderRadius: AppRadius.r6,
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: message.content));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Copied response to clipboard'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: AppRadius.r6,
+                          border: Border.all(color: colors.border, width: 1),
+                          color: colors.surface,
                         ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.copy_rounded,
-                            size: 12,
-                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Copy',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.copy_rounded,
+                              size: 13,
+                              color: colors.textMuted,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Text(
+                              'Copy',
+                              style: AppTypography.ui(
+                                size: 12,
+                                color: colors.textMuted,
+                                weight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -292,11 +326,56 @@ class _AssistantMessage extends StatelessWidget {
   }
 }
 
+/// Subtle blinking caret indicator for streaming assistant output.
+class _BlinkingCaret extends StatefulWidget {
+  const _BlinkingCaret();
+
+  @override
+  State<_BlinkingCaret> createState() => _BlinkingCaretState();
+}
+
+class _BlinkingCaretState extends State<_BlinkingCaret>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return FadeTransition(
+      opacity: _controller,
+      child: Container(
+        width: 7,
+        height: 15,
+        decoration: BoxDecoration(
+          color: colors.accent,
+          borderRadius: BorderRadius.circular(1.5),
+        ),
+      ),
+    );
+  }
+}
+
 class _CodeBlockBuilder extends MarkdownElementBuilder {
-  _CodeBlockBuilder({required this.isDark, required this.colorScheme});
+  _CodeBlockBuilder({required this.isDark, required this.colors});
 
   final bool isDark;
-  final ColorScheme colorScheme;
+  final AppColors colors;
 
   @override
   Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
@@ -305,17 +384,17 @@ class _CodeBlockBuilder extends MarkdownElementBuilder {
 
     if (!isBlock) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(4),
+          color: colors.codeBg,
+          borderRadius: AppRadius.r6,
+          border: Border.all(color: colors.border, width: 1),
         ),
         child: Text(
           raw,
-          style: TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 12,
-            color: colorScheme.onSurface,
+          style: AppTypography.code(
+            size: 13,
+            color: colors.text,
           ),
         ),
       );
@@ -323,27 +402,34 @@ class _CodeBlockBuilder extends MarkdownElementBuilder {
 
     final language = _parseLanguage(element.attributes['class'] ?? '');
 
+    final baseHighlightTheme = isDark ? atomOneDarkTheme : atomOneLightTheme;
+    final highlightTheme = Map<String, TextStyle>.from(baseHighlightTheme)
+      ..['root'] = TextStyle(
+        backgroundColor: colors.codeBg,
+        color: colors.text,
+      );
+
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1F26) : const Color(0xFFF7F7F9),
-        borderRadius: BorderRadius.circular(6),
+        color: colors.codeBg,
+        borderRadius: AppRadius.r12,
         border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.6),
-          width: 0.8,
+          color: colors.border,
+          width: 1,
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Header: Language tag and Copy Button
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: colorScheme.outline.withValues(alpha: 0.4),
-                  width: 0.8,
+                  color: colors.border,
+                  width: 1,
                 ),
               ),
             ),
@@ -351,34 +437,34 @@ class _CodeBlockBuilder extends MarkdownElementBuilder {
               children: [
                 Text(
                   language.isNotEmpty ? language : 'code',
-                  style: TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 11,
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  style: AppTypography.code(
+                    size: 12,
+                    color: colors.textMuted,
                   ),
                 ),
                 const Spacer(),
                 InkWell(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: AppRadius.r6,
                   mouseCursor: SystemMouseCursors.click,
-                  hoverColor: colorScheme.surfaceContainerHighest,
-                  onTap: () => Clipboard.setData(ClipboardData(text: raw)),
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: raw));
+                  },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.copy_rounded,
-                          size: 11,
-                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                          size: 13,
+                          color: colors.textMuted,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           'Copy',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                          style: AppTypography.ui(
+                            size: 12,
+                            color: colors.textMuted,
                           ),
                         ),
                       ],
@@ -389,16 +475,16 @@ class _CodeBlockBuilder extends MarkdownElementBuilder {
             ),
           ),
 
-          // Syntax Highlighted Body
-          Padding(
-            padding: const EdgeInsets.all(12),
+          // Horizontal scrollable syntax-highlighted code body
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.all(14),
             child: HighlightView(
               raw,
               language: language.isNotEmpty ? language : 'plaintext',
-              theme: isDark ? atomOneDarkTheme : atomOneLightTheme,
-              textStyle: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 12.5,
+              theme: highlightTheme,
+              textStyle: AppTypography.code(
+                size: 13,
                 height: 1.5,
               ),
             ),

@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme.dart';
 import '../../shared/widgets/hover_icon_button.dart';
+import '../settings/settings_providers.dart';
 import 'chat_providers.dart';
 
 /// Minimal, centered input bar for drafting messages with optional image attachments.
@@ -29,19 +31,28 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   final _focusNode = FocusNode();
   final List<String> _attachedImages = [];
   bool _canSend = false;
+  bool _isFocused = false;
 
   @override
   void initState() {
     super.initState();
     _textController.addListener(_onTextChanged);
+    _focusNode.addListener(_onFocusChanged);
   }
 
   @override
   void dispose() {
     _textController.removeListener(_onTextChanged);
+    _focusNode.removeListener(_onFocusChanged);
     _textController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onFocusChanged() {
+    if (_focusNode.hasFocus != _isFocused) {
+      setState(() => _isFocused = _focusNode.hasFocus);
+    }
   }
 
   void _onTextChanged() {
@@ -110,14 +121,15 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
     final isStreaming = ref.watch(isStreamingProvider);
     final stats = ref.watch(streamingStatsProvider);
     final selectedModel = ref.watch(selectedModelProvider);
+    final settings = ref.watch(settingsNotifierProvider);
+    final sendOnEnter = settings.sendOnEnter;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       color: Colors.transparent,
       child: Center(
         child: ConstrainedBox(
@@ -128,21 +140,23 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
               // Streaming status
               if (isStreaming && stats != null)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
                     children: [
-                      const SizedBox(
-                        width: 8,
-                        height: 8,
-                        child: CircularProgressIndicator(strokeWidth: 1.5),
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: colors.accent,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         'Generating · ${stats.tokensPerSec.toStringAsFixed(1)} tok/s (${stats.totalTokens} tokens)',
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 11,
-                          color: colorScheme.primary,
+                        style: AppTypography.code(
+                          size: 12,
+                          color: colors.textMuted,
                         ),
                       ),
                     ],
@@ -163,7 +177,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                       return Stack(
                         children: [
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: AppRadius.r8,
                             child: Image.memory(
                               bytes,
                               width: 64,
@@ -180,14 +194,14 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                                 onTap: () => _removeImage(i),
                                 child: Container(
                                   padding: const EdgeInsets.all(2),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black87,
+                                  decoration: BoxDecoration(
+                                    color: colors.bg.withValues(alpha: 0.8),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.close_rounded,
                                     size: 12,
-                                    color: Colors.white,
+                                    color: colors.text,
                                   ),
                                 ),
                               ),
@@ -199,27 +213,37 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                   ),
                 ),
 
-              // Input Container
-              Container(
+              // Input Container with 12px radius and 1px border that turns accent on focus
+              AnimatedContainer(
+                duration: AppMotion.fast,
+                curve: AppMotion.curve,
                 decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  borderRadius: BorderRadius.circular(10),
+                  color: colors.surface,
+                  borderRadius: AppRadius.r12,
                   border: Border.all(
-                    color: colorScheme.outline.withValues(alpha: 0.6),
-                    width: 0.8,
+                    color: _isFocused ? colors.accent : colors.border,
+                    width: _isFocused ? 2 : 1,
                   ),
                 ),
-                padding: const EdgeInsets.fromLTRB(14, 10, 8, 8),
+                padding: const EdgeInsets.fromLTRB(16, 12, 12, 10),
                 child: Column(
                   children: [
                     KeyboardListener(
                       focusNode: FocusNode(),
                       onKeyEvent: (event) {
                         if (event is KeyDownEvent &&
-                            event.logicalKey == LogicalKeyboardKey.enter &&
-                            !HardwareKeyboard.instance.isShiftPressed) {
-                          if (!isStreaming && _canSend) {
-                            _handleSend();
+                            event.logicalKey == LogicalKeyboardKey.enter) {
+                          final isModifierPressed =
+                              HardwareKeyboard.instance.isControlPressed ||
+                              HardwareKeyboard.instance.isMetaPressed;
+                          final shouldSend = sendOnEnter
+                              ? !HardwareKeyboard.instance.isShiftPressed
+                              : isModifierPressed;
+
+                          if (shouldSend) {
+                            if (!isStreaming && _canSend) {
+                              _handleSend();
+                            }
                           }
                         }
                       },
@@ -228,14 +252,18 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                         focusNode: _focusNode,
                         minLines: 1,
                         maxLines: 7,
-                        style: const TextStyle(fontSize: 13.5, height: 1.5),
+                        style: AppTypography.ui(
+                          size: 14,
+                          height: 1.5,
+                          color: colors.text,
+                        ),
                         decoration: InputDecoration(
                           hintText: isStreaming
                               ? 'Model is replying...'
                               : 'Ask $selectedModel...',
-                          hintStyle: TextStyle(
-                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                            fontSize: 13.5,
+                          hintStyle: AppTypography.ui(
+                            size: 14,
+                            color: colors.textMuted,
                           ),
                           filled: false,
                           isDense: true,
@@ -247,7 +275,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                       ),
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
 
                     // Bottom Controls Row
                     Row(
@@ -256,48 +284,39 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                         HoverIconButton(
                           icon: Icons.image_outlined,
                           label: 'Image',
-                          iconSize: 15,
+                          iconSize: 16,
                           tooltip: 'Attach images (Vision models)',
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                           onTap: _pickImages,
                         ),
 
                         const SizedBox(width: 8),
 
                         Text(
-                          '↵ send · ⇧↵ newline',
-                          style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 10.5,
-                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                          sendOnEnter ? '↵ send · ⇧↵ newline' : '⌘/Ctrl+↵ send · ↵ newline',
+                          style: AppTypography.code(
+                            size: 12,
+                            color: colors.textMuted,
                           ),
                         ),
 
                         const Spacer(),
 
+                        // Send / Stop button (turns into Stop button in accent when generating)
                         if (isStreaming)
-                          _StopButton(onTap: widget.onStop)
+                          _ComposerActionButton(
+                            icon: Icons.stop_rounded,
+                            label: 'Stop',
+                            accentFill: true,
+                            onTap: widget.onStop,
+                          )
                         else
-                          HoverIconButton(
+                          _ComposerActionButton(
                             icon: Icons.arrow_upward_rounded,
                             label: 'Send',
-                            iconSize: 16,
                             enabled: _canSend,
-                            color: _canSend
-                                ? colorScheme.onPrimary
-                                : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                            hoverColor: colorScheme.onPrimary,
-                            textColor: colorScheme.onPrimary,
-                            backgroundColor: _canSend
-                                ? colorScheme.primary
-                                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                            hoverBackgroundColor: _canSend
-                                ? colorScheme.primary
-                                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                            borderRadius: 6,
-                            tooltip: 'Send (↵)',
-                            onTap: _handleSend,
+                            accentFill: _canSend,
+                            onTap: _canSend ? _handleSend : null,
                           ),
                       ],
                     ),
@@ -312,55 +331,81 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   }
 }
 
-class _StopButton extends StatefulWidget {
-  const _StopButton({required this.onTap});
+class _ComposerActionButton extends StatefulWidget {
+  const _ComposerActionButton({
+    required this.icon,
+    required this.label,
+    this.enabled = true,
+    this.accentFill = false,
+    required this.onTap,
+  });
 
-  final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+  final bool enabled;
+  final bool accentFill;
+  final VoidCallback? onTap;
 
   @override
-  State<_StopButton> createState() => _StopButtonState();
+  State<_ComposerActionButton> createState() => _ComposerActionButtonState();
 }
 
-class _StopButtonState extends State<_StopButton> {
+class _ComposerActionButtonState extends State<_ComposerActionButton> {
   bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
+
+    final Color bg;
+    final Color fg;
+    if (widget.accentFill) {
+      bg = _hovered ? colors.accentHover : colors.accent;
+      fg = colors.accentTextOn;
+    } else {
+      bg = _hovered ? colors.surfaceHover : Colors.transparent;
+      fg = widget.enabled ? colors.text : colors.textMuted;
+    }
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
+      cursor: widget.enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: (_) {
+        if (widget.enabled) setState(() => _hovered = true);
+      },
+      onExit: (_) {
+        if (widget.enabled) setState(() => _hovered = false);
+      },
       child: GestureDetector(
         onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-          decoration: BoxDecoration(
-            color: _hovered
-                ? colorScheme.error.withValues(alpha: 0.2)
-                : colorScheme.error.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: _hovered ? colorScheme.error : colorScheme.error.withValues(alpha: 0.5),
-              width: 0.8,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.stop_rounded, size: 14, color: colorScheme.error),
-              const SizedBox(width: 4),
-              Text(
-                'Stop',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.error,
-                ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          child: AnimatedContainer(
+            duration: AppMotion.fast,
+            curve: AppMotion.curve,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: AppRadius.r8,
+              border: Border.all(
+                color: widget.accentFill ? Colors.transparent : colors.border,
+                width: 1,
               ),
-            ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(widget.icon, size: 15, color: fg),
+                const SizedBox(width: 4),
+                Text(
+                  widget.label,
+                  style: AppTypography.ui(
+                    size: 13,
+                    weight: FontWeight.w500,
+                    color: fg,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

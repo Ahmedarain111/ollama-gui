@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme.dart';
 import '../../database/database.dart';
 import '../../database/database_provider.dart';
 import 'chat_area.dart';
@@ -88,8 +89,7 @@ class _EmptyWorkspace extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
     final selectedModel = ref.watch(selectedModelProvider);
     final modelsAsync = ref.watch(installedModelsProvider);
 
@@ -103,55 +103,40 @@ class _EmptyWorkspace extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 740),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Stylized Brand Badge
+                // Clean App Mark
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        colorScheme.primary.withValues(alpha: 0.2),
-                        colorScheme.surfaceContainerHighest,
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
+                    color: colors.surface,
+                    borderRadius: AppRadius.r12,
                     border: Border.all(
-                      color: colorScheme.primary.withValues(alpha: 0.35),
+                      color: colors.border,
                       width: 1,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.primary.withValues(alpha: 0.08),
-                        blurRadius: 18,
-                        spreadRadius: 2,
-                      ),
-                    ],
                   ),
                   alignment: Alignment.center,
                   child: Icon(
                     Icons.terminal_rounded,
-                    size: 26,
-                    color: colorScheme.primary,
+                    size: 24,
+                    color: colors.accent,
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
 
                 // Greeting Headline
                 Text(
                   'Where shall we begin?',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.4,
-                    color: colorScheme.onSurface,
+                  style: AppTypography.ui(
+                    size: 22,
+                    weight: FontWeight.w600,
+                    color: colors.text,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -159,15 +144,23 @@ class _EmptyWorkspace extends ConsumerWidget {
                 // Interactive Model Selector Pill
                 PopupMenuButton<String>(
                   tooltip: 'Select active model',
+                  color: colors.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.r12,
+                    side: BorderSide(color: colors.border, width: 1),
+                  ),
                   onSelected: (modelName) {
                     ref.read(selectedModelProvider.notifier).state = modelName;
                   },
                   itemBuilder: (context) {
                     if (installedList.isEmpty) {
                       return [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           enabled: false,
-                          child: Text('No models installed', style: TextStyle(fontSize: 12)),
+                          child: Text(
+                            'No models installed',
+                            style: AppTypography.ui(size: 13, color: colors.textMuted),
+                          ),
                         ),
                       ];
                     }
@@ -180,24 +173,24 @@ class _EmptyWorkspace extends ConsumerWidget {
                             Icon(
                               isSelected ? Icons.check_rounded : Icons.lens_blur_rounded,
                               size: 14,
-                              color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                              color: isSelected ? colors.accent : colors.textMuted,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 m.name,
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                style: AppTypography.ui(
+                                  size: 13,
+                                  weight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                  color: isSelected ? colors.accent : colors.text,
                                 ),
                               ),
                             ),
                             Text(
                               m.sizeGb,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontFamily: 'monospace',
-                                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                              style: AppTypography.code(
+                                size: 12,
+                                color: colors.textMuted,
                               ),
                             ),
                           ],
@@ -206,13 +199,13 @@ class _EmptyWorkspace extends ConsumerWidget {
                     }).toList();
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(20),
+                      color: colors.surface,
+                      borderRadius: AppRadius.r8,
                       border: Border.all(
-                        color: colorScheme.outline.withValues(alpha: 0.5),
-                        width: 0.8,
+                        color: colors.border,
+                        width: 1,
                       ),
                     ),
                     child: Row(
@@ -220,24 +213,23 @@ class _EmptyWorkspace extends ConsumerWidget {
                       children: [
                         Icon(
                           Icons.memory_rounded,
-                          size: 13,
-                          color: colorScheme.primary,
+                          size: 14,
+                          color: colors.accent,
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         Text(
                           selectedModel,
-                          style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.onSurface,
+                          style: AppTypography.code(
+                            size: 12,
+                            weight: FontWeight.w500,
+                            color: colors.text,
                           ),
                         ),
                         const SizedBox(width: 4),
                         Icon(
                           Icons.keyboard_arrow_down_rounded,
                           size: 14,
-                          color: colorScheme.onSurfaceVariant,
+                          color: colors.textMuted,
                         ),
                       ],
                     ),
@@ -257,17 +249,15 @@ class _EmptyWorkspace extends ConsumerWidget {
                           children: [
                             _PromptStarterCard(
                               icon: Icons.lightbulb_outline_rounded,
-                              iconColor: const Color(0xFFF59E0B),
                               title: 'Explain Concept',
                               prompt:
                                   'Explain how local LLM quantization (Q4_K_M vs Q8_0) balances VRAM usage and perplexity.',
                               onTap: (prompt) =>
                                   _startConversation(context, ref, prompt),
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 12),
                             _PromptStarterCard(
                               icon: Icons.code_rounded,
-                              iconColor: const Color(0xFF38BDF8),
                               title: 'Code & Debug',
                               prompt:
                                   'Write a robust Dart streaming client that parses Ollama NDJSON tokens into real-time UI text.',
@@ -285,7 +275,6 @@ class _EmptyWorkspace extends ConsumerWidget {
                               Expanded(
                                 child: _PromptStarterCard(
                                   icon: Icons.lightbulb_outline_rounded,
-                                  iconColor: const Color(0xFFF59E0B),
                                   title: 'Explain Concept',
                                   prompt:
                                       'Explain how local LLM quantization (Q4_K_M vs Q8_0) balances VRAM usage and perplexity.',
@@ -297,7 +286,6 @@ class _EmptyWorkspace extends ConsumerWidget {
                               Expanded(
                                 child: _PromptStarterCard(
                                   icon: Icons.code_rounded,
-                                  iconColor: const Color(0xFF38BDF8),
                                   title: 'Code & Debug',
                                   prompt:
                                       'Write a robust Dart streaming client that parses Ollama NDJSON tokens into real-time UI text.',
@@ -313,7 +301,6 @@ class _EmptyWorkspace extends ConsumerWidget {
                               Expanded(
                                 child: _PromptStarterCard(
                                   icon: Icons.edit_note_rounded,
-                                  iconColor: const Color(0xFF818CF8),
                                   title: 'Draft & Summarize',
                                   prompt:
                                       'Draft a concise architectural brief highlighting the latency and privacy advantages of local AI models.',
@@ -325,7 +312,6 @@ class _EmptyWorkspace extends ConsumerWidget {
                               Expanded(
                                 child: _PromptStarterCard(
                                   icon: Icons.architecture_rounded,
-                                  iconColor: const Color(0xFFA78BFA),
                                   title: 'System Design',
                                   prompt:
                                       'Design an offline RAG pipeline architecture using local vector embeddings and SQLite.',
@@ -341,7 +327,7 @@ class _EmptyWorkspace extends ConsumerWidget {
                   ),
                 ),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
 
                 // Instant Prompt Input Field
                 ChatInputBar(
@@ -360,9 +346,9 @@ class _EmptyWorkspace extends ConsumerWidget {
                   children: [
                     Text(
                       'Press Enter to start chat · or explore',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                      style: AppTypography.ui(
+                        size: 12,
+                        color: colors.textMuted,
                       ),
                     ),
                     MouseRegion(
@@ -371,11 +357,10 @@ class _EmptyWorkspace extends ConsumerWidget {
                         onTap: () => context.go('/models'),
                         child: Text(
                           '30+ Model Catalog',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.primary,
-                            decoration: TextDecoration.underline,
+                          style: AppTypography.ui(
+                            size: 12,
+                            weight: FontWeight.w500,
+                            color: colors.accent,
                           ),
                         ),
                       ),
@@ -394,14 +379,12 @@ class _EmptyWorkspace extends ConsumerWidget {
 class _PromptStarterCard extends StatefulWidget {
   const _PromptStarterCard({
     required this.icon,
-    required this.iconColor,
     required this.title,
     required this.prompt,
     required this.onTap,
   });
 
   final IconData icon;
-  final Color iconColor;
   final String title;
   final String prompt;
   final ValueChanged<String> onTap;
@@ -415,8 +398,7 @@ class _PromptStarterCardState extends State<_PromptStarterCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -425,29 +407,16 @@ class _PromptStarterCardState extends State<_PromptStarterCard> {
       child: GestureDetector(
         onTap: () => widget.onTap(widget.prompt),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.all(14),
+          duration: AppMotion.fast,
+          curve: AppMotion.curve,
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _isHovered
-                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.85)
-                : colorScheme.surface,
-            borderRadius: BorderRadius.circular(10),
+            color: _isHovered ? colors.surfaceHover : colors.surface,
+            borderRadius: AppRadius.r12,
             border: Border.all(
-              color: _isHovered
-                  ? colorScheme.primary.withValues(alpha: 0.5)
-                  : colorScheme.outline.withValues(alpha: 0.5),
-              width: 0.8,
+              color: _isHovered ? colors.accent : colors.border,
+              width: 1,
             ),
-            boxShadow: _isHovered
-                ? [
-                    BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,48 +425,46 @@ class _PromptStarterCardState extends State<_PromptStarterCard> {
               Row(
                 children: [
                   Container(
-                    width: 26,
-                    height: 26,
+                    width: 28,
+                    height: 28,
                     decoration: BoxDecoration(
-                      color: widget.iconColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6),
+                      color: colors.surfaceHover,
+                      borderRadius: AppRadius.r6,
+                      border: Border.all(color: colors.border, width: 1),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
                       widget.icon,
                       size: 15,
-                      color: widget.iconColor,
+                      color: _isHovered ? colors.accent : colors.textMuted,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       widget.title,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.1,
-                        color: _isHovered ? colorScheme.primary : colorScheme.onSurface,
+                      style: AppTypography.ui(
+                        size: 14,
+                        weight: FontWeight.w600,
+                        color: _isHovered ? colors.accent : colors.text,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Icon(
                     Icons.arrow_forward_rounded,
-                    size: 13,
-                    color: _isHovered
-                        ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    size: 14,
+                    color: _isHovered ? colors.accent : colors.textMuted,
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               Text(
                 widget.prompt,
-                style: TextStyle(
-                  fontSize: 11.5,
+                style: AppTypography.ui(
+                  size: 13,
                   height: 1.4,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.75),
+                  color: colors.textMuted,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -509,4 +476,3 @@ class _PromptStarterCardState extends State<_PromptStarterCard> {
     );
   }
 }
-

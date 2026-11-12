@@ -174,4 +174,55 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteMessagesForConversation(int convId) {
     return (delete(messages)..where((t) => t.conversationId.equals(convId))).go();
   }
+
+  /// Returns the total count of conversations in the database.
+  Future<int> getConversationCount() async {
+    final rows = await select(conversations).get();
+    return rows.length;
+  }
+
+  /// Returns the total count of messages in the database.
+  Future<int> getMessageCount() async {
+    final rows = await select(messages).get();
+    return rows.length;
+  }
+
+  /// Clears all conversations and messages from the local database.
+  Future<void> clearAllData() async {
+    await delete(messages).go();
+    await delete(conversations).go();
+  }
+
+  /// Exports all conversations and their messages as structured JSON maps.
+  Future<List<Map<String, dynamic>>> exportAllData() async {
+    final allConvs = await (select(conversations)
+          ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+        .get();
+
+    final result = <Map<String, dynamic>>[];
+    for (final conv in allConvs) {
+      final convMessages = await getMessages(conv.id);
+      result.add({
+        'id': conv.id,
+        'title': conv.title,
+        'model': conv.model,
+        'createdAt': conv.createdAt.toIso8601String(),
+        'updatedAt': conv.updatedAt.toIso8601String(),
+        'systemPrompt': conv.systemPrompt,
+        'paramPreset': conv.paramPreset,
+        'messages': convMessages
+            .map((m) => {
+                  'id': m.id,
+                  'role': m.role,
+                  'content': m.content,
+                  'createdAt': m.createdAt.toIso8601String(),
+                  'tokensPerSec': m.tokensPerSec,
+                  'totalTokens': m.totalTokens,
+                  'durationMs': m.durationMs,
+                })
+            .toList(),
+      });
+    }
+    return result;
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme.dart';
 
 enum ConnectionStatus {
   connected,
@@ -11,7 +12,7 @@ class StatusDot extends StatelessWidget {
   const StatusDot({
     super.key,
     required this.status,
-    this.size = 10,
+    this.size = 8,
   });
 
   final ConnectionStatus status;
@@ -19,16 +20,17 @@ class StatusDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final Color color;
     switch (status) {
       case ConnectionStatus.connected:
-        color = const Color(0xFF22C55E); // Green
+        color = colors.success;
         break;
       case ConnectionStatus.disconnected:
-        color = const Color(0xFFEF4444); // Red
+        color = colors.error;
         break;
       case ConnectionStatus.loading:
-        color = const Color(0xFFEAB308); // Yellow/Amber
+        color = colors.warning;
         break;
     }
 
@@ -38,13 +40,6 @@ class StatusDot extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.4),
-            blurRadius: 4,
-            spreadRadius: 1,
-          ),
-        ],
       ),
     );
   }

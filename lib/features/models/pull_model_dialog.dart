@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/theme.dart';
+import 'models_library.dart';
 import 'models_providers.dart';
 
 class PullModelDialog extends ConsumerStatefulWidget {
@@ -25,20 +27,28 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialModelName ?? '');
+    _controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    setState(() {});
   }
 
   static const _popularModels = [
+    'qwen3:8b',
+    'qwen2.5:3b',
+    'qwen2.5:7b',
+    'deepseek-r1:7b',
     'llama3.2:3b',
     'llama3.2:1b',
-    'qwen2.5:7b',
-    'qwen2.5:3b',
-    'deepseek-r1:7b',
-    'mistral',
+    'mistral-small:24b',
+    'mistral:latest',
     'nomic-embed-text',
   ];
 
   @override
   void dispose() {
+    _controller.removeListener(_onTextChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -91,13 +101,21 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
+    final modelText = _controller.text.trim();
+    final matchingModel = findLibraryModel(modelText);
+    final currentParts = modelText.split(':');
+    final currentVariant = currentParts.length > 1 ? currentParts.last.toLowerCase() : '';
 
     return AlertDialog(
-      title: const Text('Pull Model', style: TextStyle(fontSize: 15)),
+      backgroundColor: colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: BorderSide(color: colors.border, width: 1),
+      ),
+      title: Text('Pull Model', style: AppTypography.section(color: colors.text, size: 16)),
       content: SizedBox(
-        width: 420,
+        width: 440,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,20 +124,81 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
               controller: _controller,
               enabled: !_isPulling,
               autofocus: true,
-              style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
-              decoration: const InputDecoration(
-                hintText: 'e.g. llama3.2:3b, qwen2.5:7b',
-                prefixIcon: Icon(Icons.download_rounded, size: 16),
+              style: AppTypography.code(size: 13, color: colors.text),
+              decoration: InputDecoration(
+                hintText: 'e.g. qwen3:8b, qwen2.5:3b, llama3.2:3b',
+                hintStyle: AppTypography.code(size: 13, color: colors.textMuted),
+                prefixIcon: Icon(Icons.download_rounded, size: 16, color: colors.textMuted),
+                filled: true,
+                fillColor: colors.surfaceHover,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.input),
+                  borderSide: BorderSide(color: colors.border, width: 1),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.input),
+                  borderSide: BorderSide(color: colors.border, width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.input),
+                  borderSide: BorderSide(color: colors.accent, width: 1.5),
+                ),
               ),
               onSubmitted: (_) => _isPulling ? null : _startPull(),
             ),
+
+            // Dynamic Weight Variant Selector
+            if (matchingModel != null && matchingModel.sizes.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Text(
+                    'Weight variant',
+                    style: AppTypography.caption(
+                      color: colors.textMuted,
+                      weight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '(${matchingModel.name})',
+                    style: AppTypography.code(size: 11, color: colors.accent),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: matchingModel.sizes.map((size) {
+                    final isSelected = currentVariant == size.toLowerCase();
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: _VariantChip(
+                        label: size,
+                        isSelected: isSelected,
+                        enabled: !_isPulling,
+                        onTap: () {
+                          final newTag = '${matchingModel.name}:$size';
+                          _controller.text = newTag;
+                          _controller.selection = TextSelection.fromPosition(
+                            TextPosition(offset: newTag.length),
+                          );
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 14),
             Text(
               'Suggestions',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              style: AppTypography.caption(
+                color: colors.textMuted,
+                weight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 6),
@@ -130,17 +209,24 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
                 return _SuggestionChip(
                   label: m,
                   enabled: !_isPulling,
-                  onTap: () => _controller.text = m,
+                  onTap: () {
+                    _controller.text = m;
+                    _controller.selection = TextSelection.fromPosition(
+                      TextPosition(offset: m.length),
+                    );
+                  },
                 );
               }).toList(),
             ),
             if (_isPulling) ...[
               const SizedBox(height: 16),
               ClipRRect(
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppRadius.chip),
                 child: LinearProgressIndicator(
                   value: _progress,
-                  minHeight: 3,
+                  minHeight: 4,
+                  backgroundColor: colors.border,
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.accent),
                 ),
               ),
               const SizedBox(height: 8),
@@ -150,9 +236,8 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
                   Expanded(
                     child: Text(
                       _status ?? 'Downloading...',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: colorScheme.onSurfaceVariant,
+                      style: AppTypography.caption(
+                        color: colors.textMuted,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -160,11 +245,10 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
                   if (_progress != null)
                     Text(
                       '${(_progress! * 100).toStringAsFixed(1)}%',
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
+                      style: AppTypography.code(
+                        size: 11,
+                        weight: FontWeight.w600,
+                        color: colors.accent,
                       ),
                     ),
                 ],
@@ -174,7 +258,7 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
               const SizedBox(height: 12),
               Text(
                 _errorMessage!,
-                style: TextStyle(fontSize: 11.5, color: colorScheme.error),
+                style: AppTypography.ui(size: 12, color: colors.error),
               ),
             ],
           ],
@@ -183,13 +267,93 @@ class _PullModelDialogState extends ConsumerState<PullModelDialog> {
       actions: [
         TextButton(
           onPressed: _isPulling ? null : () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text('Cancel', style: AppTypography.ui(size: 13, color: colors.textMuted)),
         ),
         FilledButton(
           onPressed: _isPulling ? null : _startPull,
-          child: Text(_isPulling ? 'Downloading...' : 'Download'),
+          style: FilledButton.styleFrom(
+            backgroundColor: colors.accent,
+            foregroundColor: colors.accentTextOn,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.button)),
+          ),
+          child: Text(_isPulling ? 'Downloading...' : 'Download', style: AppTypography.button(color: colors.accentTextOn)),
         ),
       ],
+    );
+  }
+}
+
+class _VariantChip extends StatefulWidget {
+  const _VariantChip({
+    required this.label,
+    required this.isSelected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  State<_VariantChip> createState() => _VariantChipState();
+}
+
+class _VariantChipState extends State<_VariantChip> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    Color bg;
+    Color border;
+    Color text;
+
+    if (widget.isSelected) {
+      bg = colors.accent.withValues(alpha: 0.15);
+      border = colors.accent;
+      text = colors.accent;
+    } else if (_hovered && widget.enabled) {
+      bg = colors.surfaceHover;
+      border = colors.accent.withValues(alpha: 0.5);
+      text = colors.text;
+    } else {
+      bg = colors.surfaceHover;
+      border = colors.border;
+      text = colors.textMuted;
+    }
+
+    return MouseRegion(
+      onEnter: (_) {
+        if (widget.enabled) setState(() => _hovered = true);
+      },
+      onExit: (_) {
+        if (widget.enabled) setState(() => _hovered = false);
+      },
+      cursor: widget.enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      child: GestureDetector(
+        onTap: widget.enabled ? widget.onTap : null,
+        child: AnimatedContainer(
+          duration: AppMotion.shortDuration,
+          curve: AppMotion.standardCurve,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(AppRadius.chip),
+            border: Border.all(color: border, width: 1),
+          ),
+          child: Text(
+            widget.label,
+            style: AppTypography.code(
+              size: 11,
+              weight: widget.isSelected ? FontWeight.w600 : FontWeight.w400,
+              color: text,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -214,7 +378,7 @@ class _SuggestionChipState extends State<_SuggestionChip> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
 
     return MouseRegion(
       onEnter: (_) {
@@ -229,30 +393,29 @@ class _SuggestionChipState extends State<_SuggestionChip> {
       child: GestureDetector(
         onTap: widget.enabled ? widget.onTap : null,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          duration: AppMotion.shortDuration,
+          curve: AppMotion.standardCurve,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: _hovered && widget.enabled
-                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.9)
-                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(4),
+                ? colors.surfaceHover
+                : colors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.chip),
             border: Border.all(
               color: _hovered && widget.enabled
-                  ? colorScheme.outline.withValues(alpha: 0.8)
-                  : colorScheme.outline.withValues(alpha: 0.4),
-              width: 0.8,
+                  ? colors.accent.withValues(alpha: 0.6)
+                  : colors.border,
+              width: 1,
             ),
           ),
           child: Text(
             widget.label,
-            style: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 11,
-              fontWeight: _hovered ? FontWeight.w500 : FontWeight.w400,
+            style: AppTypography.code(
+              size: 11,
+              weight: _hovered ? FontWeight.w500 : FontWeight.w400,
               color: _hovered && widget.enabled
-                  ? colorScheme.onSurface
-                  : colorScheme.onSurfaceVariant,
+                  ? colors.accent
+                  : colors.text,
             ),
           ),
         ),
@@ -260,4 +423,3 @@ class _SuggestionChipState extends State<_SuggestionChip> {
     );
   }
 }
-

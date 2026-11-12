@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
+import '../../core/theme.dart';
 import '../../database/database.dart';
 import '../../database/database_provider.dart';
 import '../../shared/widgets/hover_icon_button.dart';
@@ -152,9 +153,8 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final modelsAsync = ref.watch(installedModelsProvider);
 
     final installedNames = modelsAsync.when(
@@ -176,57 +176,55 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
           Container(
             width: 420,
             decoration: BoxDecoration(
-              color: colorScheme.surface,
+              color: colors.surface,
               border: Border(
                 right: BorderSide(
-                  color: theme.dividerTheme.color ?? colorScheme.outlineVariant,
+                  color: colors.border,
                   width: 1,
                 ),
               ),
             ),
             child: ListView(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               children: [
                 Text(
                   'MODEL CONFIGURATION',
-                  style: TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
+                  style: AppTypography.code(
+                    size: 10,
+                    weight: FontWeight.w600,
                     letterSpacing: 0.6,
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    color: colors.textMuted,
                   ),
                 ),
                 const SizedBox(height: 14),
 
                 // Base Model Dropdown
-                _buildLabel('BASE MODEL (FROM)', colorScheme),
+                _buildLabel('BASE MODEL (FROM)', colors),
                 const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(6),
+                    color: colors.surfaceHover,
+                    borderRadius: BorderRadius.circular(AppRadius.input),
                     border: Border.all(
-                      color: colorScheme.outline.withValues(alpha: 0.4),
-                      width: 0.8,
+                      color: colors.border,
+                      width: 1,
                     ),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: installedNames.contains(_selectedBaseModel) ? _selectedBaseModel : (installedNames.isNotEmpty ? installedNames.first : null),
                       isExpanded: true,
-                      hint: const Text('Select base model', style: TextStyle(fontSize: 12.5)),
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 12.5,
-                        color: colorScheme.onSurface,
+                      hint: Text('Select base model', style: AppTypography.ui(size: 13, color: colors.textMuted)),
+                      style: AppTypography.code(
+                        size: 12.5,
+                        color: colors.text,
                       ),
-                      dropdownColor: colorScheme.surface,
+                      dropdownColor: colors.surface,
                       items: installedNames.map((name) {
                         return DropdownMenuItem<String>(
                           value: name,
-                          child: Text(name, style: const TextStyle(fontSize: 12.5)),
+                          child: Text(name, style: AppTypography.code(size: 12.5, color: colors.text)),
                         );
                       }).toList(),
                       onChanged: (val) {
@@ -239,37 +237,39 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                 const SizedBox(height: 16),
 
                 // Target Model Name
-                _buildLabel('NEW MODEL NAME', colorScheme),
+                _buildLabel('NEW MODEL NAME', colors),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _modelNameController,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                  style: AppTypography.code(size: 13, color: colors.text),
                   decoration: InputDecoration(
                     hintText: 'e.g. custom-expert:latest',
-                    hintStyle: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    hintStyle: AppTypography.code(
+                      size: 12,
+                      color: colors.textMuted,
                     ),
                     filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                    fillColor: colors.surfaceHover,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.input),
                       borderSide: BorderSide(
-                        color: colorScheme.outline.withValues(alpha: 0.4),
+                        color: colors.border,
+                        width: 1,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.input),
                       borderSide: BorderSide(
-                        color: colorScheme.outline.withValues(alpha: 0.4),
+                        color: colors.border,
+                        width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.input),
                       borderSide: BorderSide(
-                        color: colorScheme.primary,
-                        width: 1.2,
+                        color: colors.accent,
+                        width: 1.5,
                       ),
                     ),
                   ),
@@ -278,39 +278,41 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                 const SizedBox(height: 16),
 
                 // System Prompt
-                _buildLabel('SYSTEM PROMPT', colorScheme),
+                _buildLabel('SYSTEM PROMPT', colors),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _systemPromptController,
                   maxLines: 5,
                   minLines: 3,
-                  style: const TextStyle(fontSize: 12.5, height: 1.45),
+                  style: AppTypography.ui(size: 13, height: 1.45, color: colors.text),
                   decoration: InputDecoration(
                     hintText: 'Custom personality, role directives, and guidelines...',
-                    hintStyle: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    hintStyle: AppTypography.ui(
+                      size: 12,
+                      color: colors.textMuted,
                     ),
                     filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                    fillColor: colors.surfaceHover,
                     contentPadding: const EdgeInsets.all(10),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.input),
                       borderSide: BorderSide(
-                        color: colorScheme.outline.withValues(alpha: 0.4),
+                        color: colors.border,
+                        width: 1,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.input),
                       borderSide: BorderSide(
-                        color: colorScheme.outline.withValues(alpha: 0.4),
+                        color: colors.border,
+                        width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.input),
                       borderSide: BorderSide(
-                        color: colorScheme.primary,
-                        width: 1.2,
+                        color: colors.accent,
+                        width: 1.5,
                       ),
                     ),
                   ),
@@ -322,13 +324,12 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildLabel('TEMPERATURE', colorScheme),
+                    _buildLabel('TEMPERATURE', colors),
                     Text(
                       _temperature.toStringAsFixed(2),
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                        color: colorScheme.primary,
+                      style: AppTypography.code(
+                        size: 11,
+                        color: colors.accent,
                       ),
                     ),
                   ],
@@ -341,35 +342,34 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                   onChanged: (val) => setState(() => _temperature = val),
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: AppSpacing.sm),
 
                 // Context Window
-                _buildLabel('CONTEXT WINDOW (num_ctx)', colorScheme),
+                _buildLabel('CONTEXT WINDOW (num_ctx)', colors),
                 const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(6),
+                    color: colors.surfaceHover,
+                    borderRadius: BorderRadius.circular(AppRadius.input),
                     border: Border.all(
-                      color: colorScheme.outline.withValues(alpha: 0.4),
-                      width: 0.8,
+                      color: colors.border,
+                      width: 1,
                     ),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<int>(
                       value: _numCtx,
                       isExpanded: true,
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 12.5,
-                        color: colorScheme.onSurface,
+                      style: AppTypography.code(
+                        size: 12.5,
+                        color: colors.text,
                       ),
-                      dropdownColor: colorScheme.surface,
+                      dropdownColor: colors.surface,
                       items: _contextWindowOptions.map((ctx) {
                         return DropdownMenuItem<int>(
                           value: ctx,
-                          child: Text('$ctx tokens (${(ctx / 1024).round()}k)'),
+                          child: Text('$ctx tokens (${(ctx / 1024).round()}k)', style: AppTypography.code(size: 12.5, color: colors.text)),
                         );
                       }).toList(),
                       onChanged: (val) {
@@ -379,19 +379,18 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 // Top P
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildLabel('TOP P', colorScheme),
+                    _buildLabel('TOP P', colors),
                     Text(
                       _topP.toStringAsFixed(2),
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                        color: colorScheme.primary,
+                      style: AppTypography.code(
+                        size: 11,
+                        color: colors.accent,
                       ),
                     ),
                   ],
@@ -404,56 +403,58 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                   onChanged: (val) => setState(() => _topP = val),
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: AppSpacing.sm),
 
                 // Stop Token (optional)
-                _buildLabel('STOP TOKEN (OPTIONAL)', colorScheme),
+                _buildLabel('STOP TOKEN (OPTIONAL)', colors),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _stopTokenController,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                  style: AppTypography.code(size: 12, color: colors.text),
                   decoration: InputDecoration(
                     hintText: 'e.g. <|eot_id|>',
-                    hintStyle: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    hintStyle: AppTypography.code(
+                      size: 12,
+                      color: colors.textMuted,
                     ),
                     filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                    fillColor: colors.surfaceHover,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.input),
                       borderSide: BorderSide(
-                        color: colorScheme.outline.withValues(alpha: 0.4),
+                        color: colors.border,
+                        width: 1,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.input),
                       borderSide: BorderSide(
-                        color: colorScheme.outline.withValues(alpha: 0.4),
+                        color: colors.border,
+                        width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.input),
                       borderSide: BorderSide(
-                        color: colorScheme.primary,
-                        width: 1.2,
+                        color: colors.accent,
+                        width: 1.5,
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xl),
 
                 // Build Action Box
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(8),
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                     border: Border.all(
-                      color: colorScheme.outline.withValues(alpha: 0.4),
-                      width: 0.8,
+                      color: colors.border,
+                      width: 1,
                     ),
                   ),
                   child: Column(
@@ -461,16 +462,15 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.layers_outlined, size: 14, color: colorScheme.primary),
+                          Icon(Icons.layers_outlined, size: 14, color: colors.accent),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               'Target: ${_modelNameController.text.trim().isEmpty ? 'unnamed' : _modelNameController.text.trim()}',
-                              style: TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: colorScheme.onSurface,
+                              style: AppTypography.code(
+                                size: 11,
+                                weight: FontWeight.w500,
+                                color: colors.text,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -480,18 +480,18 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                       const SizedBox(height: 10),
                       FilledButton.icon(
                         icon: _isBuilding
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 14,
                                 height: 14,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: colors.accentTextOn),
                               )
                             : const Icon(Icons.rocket_launch_rounded, size: 15),
                         label: Text(_isBuilding ? 'Compiling & Registering...' : 'Build Model'),
                         style: FilledButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          foregroundColor: Colors.white,
+                          backgroundColor: colors.accent,
+                          foregroundColor: colors.accentTextOn,
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.button)),
                         ),
                         onPressed: _isBuilding || installedNames.isEmpty
                             ? null
@@ -507,35 +507,36 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
           // Right Column: Live Modelfile & Streaming Build Console
           Expanded(
             child: Container(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.15),
+              color: colors.bg,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Modelfile Preview Header
                   Container(
                     height: 42,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     decoration: BoxDecoration(
-                      color: colorScheme.surface,
+                      color: colors.surface,
                       border: Border(
                         bottom: BorderSide(
-                          color: theme.dividerTheme.color ?? colorScheme.outlineVariant,
+                          color: colors.border,
                           width: 1,
                         ),
                       ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.code_rounded, size: 16),
-                        const SizedBox(width: 8),
+                        Icon(Icons.code_rounded, size: 16, color: colors.textMuted),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           'Modelfile Preview',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
+                          style: AppTypography.ui(
+                            size: 13,
+                            weight: FontWeight.w600,
+                            color: colors.text,
                           ),
                         ),
+                        const Spacer(),
                         HoverIconButton(
                           icon: Icons.copy_rounded,
                           label: 'Copy Modelfile',
@@ -551,20 +552,23 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                             );
                           },
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(4),
+                            color: colors.surfaceHover,
+                            borderRadius: BorderRadius.circular(AppRadius.chip),
+                            border: Border.all(
+                              color: colors.border,
+                              width: 1,
+                            ),
                           ),
                           child: Text(
                             'LIVE PREVIEW',
-                            style: TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.onSurfaceVariant,
+                            style: AppTypography.code(
+                              size: 10,
+                              weight: FontWeight.w600,
+                              color: colors.textMuted,
                             ),
                           ),
                         ),
@@ -576,17 +580,25 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                   Expanded(
                     flex: 5,
                     child: Container(
-                      padding: const EdgeInsets.all(16),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: colors.codeBg,
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          border: Border.all(
+                            color: colors.border,
+                            width: 1,
+                          ),
+                        ),
+                        clipBehavior: Clip.antiAlias,
                         child: SingleChildScrollView(
                           child: HighlightView(
                             modelfileContent,
                             language: 'dockerfile',
                             theme: isDark ? atomOneDarkTheme : atomOneLightTheme,
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             textStyle: const TextStyle(
-                              fontFamily: 'monospace',
+                              fontFamily: AppTypography.codeFont,
                               fontSize: 12.5,
                               height: 1.5,
                             ),
@@ -599,16 +611,16 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                   // Build Console Header & Output
                   Container(
                     height: 38,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     decoration: BoxDecoration(
-                      color: colorScheme.surface,
+                      color: colors.surface,
                       border: Border(
                         top: BorderSide(
-                          color: theme.dividerTheme.color ?? colorScheme.outlineVariant,
+                          color: colors.border,
                           width: 1,
                         ),
                         bottom: BorderSide(
-                          color: theme.dividerTheme.color ?? colorScheme.outlineVariant,
+                          color: colors.border,
                           width: 1,
                         ),
                       ),
@@ -618,25 +630,27 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                         Icon(
                           Icons.terminal_rounded,
                           size: 15,
-                          color: colorScheme.onSurfaceVariant,
+                          color: colors.textMuted,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           'Build Console',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
+                          style: AppTypography.ui(
+                            size: 12,
+                            weight: FontWeight.w600,
+                            color: colors.text,
                           ),
                         ),
                         const Spacer(),
                         if (_buildSuccess)
-                          FilledButton.tonalIcon(
+                          FilledButton.icon(
                             icon: const Icon(Icons.chat_bubble_outline_rounded, size: 14),
-                            label: const Text('Start Chat', style: TextStyle(fontSize: 11)),
+                            label: Text('Start Chat', style: AppTypography.ui(size: 11, weight: FontWeight.w500, color: colors.accentTextOn)),
                             style: FilledButton.styleFrom(
+                              backgroundColor: colors.accent,
+                              foregroundColor: colors.accentTextOn,
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.button)),
                             ),
                             onPressed: _startChatWithCreatedModel,
                           ),
@@ -648,8 +662,8 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                   Expanded(
                     flex: 3,
                     child: Container(
-                      color: isDark ? const Color(0xFF121316) : const Color(0xFFF1F2F5),
-                      padding: const EdgeInsets.all(12),
+                      color: colors.codeBg,
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       child: _buildLogs.isEmpty
                           ? Center(
                               child: Column(
@@ -658,37 +672,36 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                     decoration: BoxDecoration(
-                                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                                      borderRadius: BorderRadius.circular(5),
+                                      color: colors.surface,
+                                      borderRadius: BorderRadius.circular(AppRadius.chip),
                                       border: Border.all(
-                                        color: colorScheme.outline.withValues(alpha: 0.4),
-                                        width: 0.8,
+                                        color: colors.border,
+                                        width: 1,
                                       ),
                                     ),
                                     child: Text(
                                       r'$ ollama create <target_model> -f ./Modelfile',
-                                      style: TextStyle(
-                                        fontFamily: 'monospace',
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w500,
-                                        color: colorScheme.primary,
+                                      style: AppTypography.code(
+                                        size: 11.5,
+                                        weight: FontWeight.w500,
+                                        color: colors.accent,
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
+                                  const SizedBox(height: AppSpacing.sm),
                                   Text(
                                     'Build engine ready. Click "Build Model" to compile and register.',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.75),
+                                    style: AppTypography.ui(
+                                      size: 12,
+                                      color: colors.textMuted,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: AppSpacing.xs),
                                   Text(
                                     'Outputs live layer digests, template verification, and registry tags.',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                    style: AppTypography.caption(
+                                      size: 11,
+                                      color: colors.textMuted,
                                     ),
                                   ),
                                 ],
@@ -705,14 +718,13 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
                                   padding: const EdgeInsets.symmetric(vertical: 2),
                                   child: Text(
                                     log,
-                                    style: TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontSize: 11.5,
+                                    style: AppTypography.code(
+                                      size: 11.5,
                                       color: isError
-                                        ? Colors.redAccent
-                                        : isSuccess
-                                          ? const Color(0xFF10B981)
-                                          : colorScheme.onSurfaceVariant,
+                                          ? colors.error
+                                          : isSuccess
+                                              ? colors.success
+                                              : colors.textMuted,
                                     ),
                                   ),
                                 );
@@ -728,15 +740,14 @@ class _ModelfileScreenState extends ConsumerState<ModelfileScreen> {
       );
   }
 
-  Widget _buildLabel(String text, ColorScheme colorScheme) {
+  Widget _buildLabel(String text, AppColors colors) {
     return Text(
       text,
-      style: TextStyle(
-        fontFamily: 'monospace',
-        fontSize: 10,
-        fontWeight: FontWeight.w600,
+      style: AppTypography.code(
+        size: 10,
+        weight: FontWeight.w600,
         letterSpacing: 0.6,
-        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+        color: colors.textMuted,
       ),
     );
   }

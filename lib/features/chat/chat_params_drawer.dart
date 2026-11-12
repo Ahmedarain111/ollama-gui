@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme.dart';
 import '../../database/database_provider.dart';
 import '../../shared/widgets/hover_icon_button.dart';
 import 'chat_context_bar.dart';
@@ -130,8 +131,7 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.appColors;
     final convAsync = ref.watch(conversationDetailProvider(widget.conversationId));
 
     convAsync.whenData((conv) {
@@ -143,10 +143,10 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
     return Container(
       width: 330,
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: colors.surface,
         border: Border(
           left: BorderSide(
-            color: theme.dividerTheme.color ?? colorScheme.outlineVariant,
+            color: colors.border,
             width: 1,
           ),
         ),
@@ -156,32 +156,32 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
           // Header Bar
           Container(
             height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: theme.dividerTheme.color ?? colorScheme.outlineVariant,
+                  color: colors.border,
                   width: 1,
                 ),
               ),
             ),
             child: Row(
               children: [
-                Icon(Icons.tune_rounded, size: 16, color: colorScheme.primary),
+                Icon(Icons.tune_rounded, size: 16, color: colors.accent),
                 const SizedBox(width: 8),
                 Text(
                   'Inference & System',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
+                  style: AppTypography.ui(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    color: colors.text,
                   ),
                 ),
                 const Spacer(),
                 HoverIconButton(
                   icon: Icons.close_rounded,
                   label: 'Close',
-                  iconSize: 17,
+                  iconSize: 16,
                   tooltip: 'Close panel',
                   onTap: widget.onClose,
                 ),
@@ -197,50 +197,42 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
                 // System Prompt Section
                 _buildSectionHeader(
                   title: 'SYSTEM PROMPT',
-                  description:
-                      'Root instruction guiding tone, role, and formatting.',
-                  colorScheme: colorScheme,
+                  description: 'Root instruction guiding tone, role, and formatting.',
+                  colors: colors,
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _systemPromptController,
                   maxLines: 5,
                   minLines: 3,
-                  style: const TextStyle(fontSize: 12.5, height: 1.45),
+                  style: AppTypography.ui(size: 13, height: 1.5, color: colors.text),
                   decoration: InputDecoration(
                     hintText:
                         'e.g. You are an expert code reviewer. Provide concise, production-ready analysis...',
-                    hintStyle: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    hintStyle: AppTypography.ui(
+                      size: 13,
+                      color: colors.textMuted,
                     ),
                     filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-                    contentPadding: const EdgeInsets.all(10),
+                    fillColor: colors.surfaceHover,
+                    contentPadding: const EdgeInsets.all(12),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(
-                        color: colorScheme.outline.withValues(alpha: 0.4),
-                      ),
+                      borderRadius: AppRadius.r8,
+                      borderSide: BorderSide(color: colors.border, width: 1),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(
-                        color: colorScheme.outline.withValues(alpha: 0.4),
-                      ),
+                      borderRadius: AppRadius.r8,
+                      borderSide: BorderSide(color: colors.border, width: 1),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(
-                        color: colorScheme.primary,
-                        width: 1.2,
-                      ),
+                      borderRadius: AppRadius.r8,
+                      borderSide: BorderSide(color: colors.accent, width: 2),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 20),
-                const Divider(height: 1),
+                const SizedBox(height: 24),
+                Divider(height: 1, color: colors.border),
                 const SizedBox(height: 16),
 
                 // Temperature Slider
@@ -248,7 +240,7 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
                   label: 'TEMPERATURE',
                   valueString: _temperature.toStringAsFixed(2),
                   caption: 'Lower is precise and logical; higher is creative.',
-                  colorScheme: colorScheme,
+                  colors: colors,
                   child: Slider(
                     value: _temperature,
                     min: 0.0,
@@ -269,35 +261,37 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
                 _buildSectionHeader(
                   title: 'CONTEXT WINDOW (num_ctx)',
                   description: 'Maximum token memory allocated for this chat.',
-                  colorScheme: colorScheme,
+                  colors: colors,
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(6),
+                    color: colors.surfaceHover,
+                    borderRadius: AppRadius.r8,
                     border: Border.all(
-                      color: colorScheme.outline.withValues(alpha: 0.4),
-                      width: 0.8,
+                      color: colors.border,
+                      width: 1,
                     ),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<int>(
                       value: _numCtx,
                       isExpanded: true,
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 12.5,
-                        color: colorScheme.onSurface,
+                      style: AppTypography.code(
+                        size: 12,
+                        color: colors.text,
+                        weight: FontWeight.w500,
                       ),
-                      dropdownColor: colorScheme.surface,
+                      dropdownColor: colors.surface,
+                      borderRadius: AppRadius.r12,
+                      icon: Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: colors.textMuted),
                       items: _contextWindowOptions.map((ctx) {
                         return DropdownMenuItem<int>(
                           value: ctx,
                           child: Text(
                             '$ctx tokens (${(ctx / 1024).round()}k)',
-                            style: const TextStyle(fontSize: 12.5),
+                            style: AppTypography.code(size: 12, color: colors.text),
                           ),
                         );
                       }).toList(),
@@ -315,7 +309,7 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
                   label: 'TOP P (NUCLEUS)',
                   valueString: _topP.toStringAsFixed(2),
                   caption: 'Filters probability distribution of candidate tokens.',
-                  colorScheme: colorScheme,
+                  colors: colors,
                   child: Slider(
                     value: _topP,
                     min: 0.05,
@@ -332,7 +326,7 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
                   label: 'REPEAT PENALTY',
                   valueString: _repeatPenalty.toStringAsFixed(2),
                   caption: 'Penalizes loops and repetitive verbiage.',
-                  colorScheme: colorScheme,
+                  colors: colors,
                   child: Slider(
                     value: _repeatPenalty,
                     min: 1.0,
@@ -349,10 +343,10 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colorScheme.surface,
+              color: colors.surface,
               border: Border(
                 top: BorderSide(
-                  color: theme.dividerTheme.color ?? colorScheme.outlineVariant,
+                  color: colors.border,
                   width: 1,
                 ),
               ),
@@ -363,28 +357,35 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
                   onPressed: _resetDefaults,
                   child: Text(
                     'Reset Defaults',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    style: AppTypography.ui(size: 13, color: colors.textMuted),
                   ),
                 ),
                 const Spacer(),
                 FilledButton(
                   onPressed: _isSaving ? null : _saveParameters,
                   style: FilledButton.styleFrom(
+                    backgroundColor: colors.accent,
+                    foregroundColor: colors.accentTextOn,
+                    shape: RoundedRectangleBorder(borderRadius: AppRadius.r8),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
                   ),
                   child: _isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 14,
                           height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.accentTextOn,
+                          ),
                         )
-                      : const Text('Save Params', style: TextStyle(fontSize: 12)),
+                      : Text(
+                          'Save Params',
+                          style: AppTypography.ui(
+                            size: 13,
+                            weight: FontWeight.w500,
+                            color: colors.accentTextOn,
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -397,27 +398,25 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
   Widget _buildSectionHeader({
     required String title,
     required String description,
-    required ColorScheme colorScheme,
+    required AppColors colors,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.6,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+          style: AppTypography.code(
+            size: 12,
+            weight: FontWeight.w600,
+            color: colors.text,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           description,
-          style: TextStyle(
-            fontSize: 11,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+          style: AppTypography.ui(
+            size: 12,
+            color: colors.textMuted,
           ),
         ),
       ],
@@ -428,7 +427,7 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
     required String label,
     required String valueString,
     required String caption,
-    required ColorScheme colorScheme,
+    required AppColors colors,
     required Widget child,
   }) {
     return Column(
@@ -439,31 +438,28 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
           children: [
             Text(
               label,
-              style: TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.6,
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+              style: AppTypography.code(
+                size: 12,
+                weight: FontWeight.w600,
+                color: colors.text,
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(4),
+                color: colors.surfaceHover,
+                borderRadius: AppRadius.r6,
                 border: Border.all(
-                  color: colorScheme.outline.withValues(alpha: 0.4),
-                  width: 0.6,
+                  color: colors.border,
+                  width: 1,
                 ),
               ),
               child: Text(
                 valueString,
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.primary,
+                style: AppTypography.code(
+                  size: 12,
+                  weight: FontWeight.w600,
+                  color: colors.accent,
                 ),
               ),
             ),
@@ -472,19 +468,20 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
         const SizedBox(height: 2),
         Text(
           caption,
-          style: TextStyle(
-            fontSize: 11,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+          style: AppTypography.ui(
+            size: 12,
+            color: colors.textMuted,
           ),
         ),
         SliderTheme(
           data: SliderThemeData(
             trackHeight: 2.5,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-            activeTrackColor: colorScheme.primary,
-            inactiveTrackColor: colorScheme.outline.withValues(alpha: 0.3),
-            thumbColor: colorScheme.primary,
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+            activeTrackColor: colors.accent,
+            inactiveTrackColor: colors.border,
+            thumbColor: colors.accent,
+            overlayColor: colors.accent.withValues(alpha: 0.15),
           ),
           child: child,
         ),

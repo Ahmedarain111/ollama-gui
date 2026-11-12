@@ -4,6 +4,7 @@ import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../database/database.dart';
 import '../../database/database_provider.dart';
+import '../settings/settings_providers.dart';
 
 /// Riverpod providers specific to the chat feature.
 
@@ -31,14 +32,19 @@ final installedModelsProvider = FutureProvider<List<OllamaModel>>((ref) async {
 // Selected model
 // ---------------------------------------------------------------------------
 
-/// The model currently chosen for new messages. Defaults to first available.
+/// The model currently chosen for new messages. Defaults to configured default or first available.
 final selectedModelProvider = StateProvider<String>((ref) {
   final modelsAsync = ref.watch(installedModelsProvider);
+  final defaultModel = ref.watch(settingsNotifierProvider).defaultModel;
   return modelsAsync.when(
-    data: (models) =>
-        models.isNotEmpty ? models.first.name : 'llama3.2',
-    loading: () => 'llama3.2',
-    error: (_, __) => 'llama3.2',
+    data: (models) {
+      if (defaultModel != null && models.any((m) => m.name == defaultModel)) {
+        return defaultModel;
+      }
+      return models.isNotEmpty ? models.first.name : 'llama3.2';
+    },
+    loading: () => defaultModel ?? 'llama3.2',
+    error: (_, __) => defaultModel ?? 'llama3.2',
   );
 });
 
