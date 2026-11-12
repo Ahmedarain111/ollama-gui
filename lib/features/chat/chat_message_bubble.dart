@@ -38,24 +38,38 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 780),
-            child: _isUser
-                ? _UserMessage(content: widget.message.content)
-                : _AssistantMessage(
-                    content: widget.message.content,
-                    message: widget.message,
-                    isStreaming: widget.isStreaming,
-                    isDark: isDark,
-                    colorScheme: colorScheme,
-                    isHovered: _hovered,
-                  ),
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 6),
+            child: child,
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 780),
+              child: _isUser
+                  ? _UserMessage(content: widget.message.content)
+                  : _AssistantMessage(
+                      content: widget.message.content,
+                      message: widget.message,
+                      isStreaming: widget.isStreaming,
+                      isDark: isDark,
+                      colorScheme: colorScheme,
+                      isHovered: _hovered,
+                    ),
+            ),
           ),
         ),
       ),

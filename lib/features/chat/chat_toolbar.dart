@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../core/models.dart';
 import '../../database/database_provider.dart';
 import '../../shared/widgets/hover_icon_button.dart';
+import 'chat_context_bar.dart';
 import 'chat_media_helper.dart';
 import 'chat_providers.dart';
 
@@ -115,7 +116,12 @@ class _ChatToolbarState extends ConsumerState<ChatToolbar> {
                   ),
           ),
 
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
+
+          // Context Window Utilization Meter
+          ChatContextBar(conversationId: widget.conversationId),
+
+          const SizedBox(width: 8),
 
           // Sleek Model Selector with hover highlight and click cursor
           modelsAsync.when(

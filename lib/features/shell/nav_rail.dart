@@ -36,7 +36,7 @@ class _AppNavRailState extends ConsumerState<AppNavRail> {
       onEnter: (_) => setState(() => _isRailHovered = true),
       onExit: (_) => setState(() => _isRailHovered = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         width: isExpanded ? 168 : 56,
         decoration: BoxDecoration(
@@ -282,7 +282,7 @@ class _NavItemState extends State<_NavItem> {
         child: GestureDetector(
           onTap: widget.onTap,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 140),
+            duration: const Duration(milliseconds: 160),
             curve: Curves.easeOutCubic,
             height: 38,
             margin: const EdgeInsets.symmetric(horizontal: 8),

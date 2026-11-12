@@ -26,12 +26,27 @@ class _ChatMessageListState extends ConsumerState<ChatMessageList> {
     super.dispose();
   }
 
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
+  void _scrollToBottom({bool smooth = false}) {
+    if (!_scrollController.hasClients) return;
+
+    final pos = _scrollController.position;
+    // Don't auto-scroll if user scrolled up to read earlier history
+    final isNearBottom = pos.maxScrollExtent - pos.pixels <= 180;
+    if (!isNearBottom && !smooth) return;
+
+    final target = pos.maxScrollExtent;
+    if (smooth) {
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
+        target,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      // Rapid micro-glide during token generation prevents animation cancel stutter
+      _scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 60),
+        curve: Curves.linear,
       );
     }
   }
@@ -48,11 +63,16 @@ class _ChatMessageListState extends ConsumerState<ChatMessageList> {
       error: (e, _) =>
           Center(child: Text('Error loading messages: $e')),
       data: (messages) {
-        // Auto-scroll when messages arrive during streaming
-        if (messages.length != _prevMessageCount || isStreaming) {
+        // Auto-scroll when messages arrive or during streaming
+        if (messages.length != _prevMessageCount) {
+          final isNewMessage = messages.length > _prevMessageCount;
           _prevMessageCount = messages.length;
           WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _scrollToBottom(),
+            (_) => _scrollToBottom(smooth: isNewMessage),
+          );
+        } else if (isStreaming) {
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _scrollToBottom(smooth: false),
           );
         }
 

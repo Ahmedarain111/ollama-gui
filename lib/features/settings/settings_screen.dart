@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/ollama_process_manager.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/hover_icon_button.dart';
 import '../../shared/widgets/status_dot.dart';
@@ -74,6 +75,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final colorScheme = theme.colorScheme;
     final currentTheme = ref.watch(themeModeProvider);
     final connectionStatus = ref.watch(ollamaConnectionStatusProvider);
+    final daemonStatus = ref.watch(ollamaServiceStatusProvider);
 
     return Scaffold(
       body: Center(
@@ -177,6 +179,97 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           onTap: _testConnection,
                         ),
                       ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // -----------------------------------------------------------
+              // Section: Local Daemon Supervisor
+              // -----------------------------------------------------------
+              const _SectionTitle(title: 'Local Daemon Supervisor'),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.6),
+                    width: 0.8,
+                  ),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.terminal_rounded, size: 16, color: colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Background Process: ollama serve',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            daemonStatus == OllamaServiceStatus.running
+                                ? 'ACTIVE'
+                                : (daemonStatus == OllamaServiceStatus.starting
+                                    ? 'STARTING...'
+                                    : 'STANDBY'),
+                            style: TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: daemonStatus == OllamaServiceStatus.running
+                                  ? const Color(0xFF10B981)
+                                  : colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'The application automatically launches "ollama serve" in the background upon startup so models are immediately available.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton.tonalIcon(
+                      icon: const Icon(Icons.refresh_rounded, size: 15),
+                      label: const Text('Start / Recheck Daemon', style: TextStyle(fontSize: 12)),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      onPressed: () async {
+                        final ok = await OllamaProcessManager().startIfNeeded(ref: ref);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(ok
+                                  ? 'Ollama daemon is running and reachable'
+                                  : 'Could not connect to Ollama daemon'),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
                     ),
                   ],
                 ),

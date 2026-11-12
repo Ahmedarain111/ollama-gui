@@ -43,14 +43,22 @@ class ChatArea extends ConsumerWidget {
           ),
         ),
 
-        // Collapsible side drawer for inference parameters & system prompt
-        if (showParams)
-          ChatParamsDrawer(
-            conversationId: conversationId,
-            onClose: () {
-              ref.read(showParamsPanelProvider.notifier).state = false;
-            },
+        // Smoothly animated slide-over drawer for inference parameters & system prompt
+        ClipRect(
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.centerRight,
+            child: showParams
+                ? ChatParamsDrawer(
+                    conversationId: conversationId,
+                    onClose: () {
+                      ref.read(showParamsPanelProvider.notifier).state = false;
+                    },
+                  )
+                : const SizedBox(width: 0, height: double.infinity),
           ),
+        ),
       ],
     );
   }

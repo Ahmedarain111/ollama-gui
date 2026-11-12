@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'ollama_client.dart';
+import 'ollama_process_manager.dart';
 
 /// Controls the app's theme mode.
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.dark);
@@ -17,8 +20,19 @@ final ollamaClientProvider = Provider<OllamaClient>((ref) {
   return OllamaClient(baseUrl: baseUrl);
 });
 
-/// Checks whether the Ollama server is reachable.
+/// Checks whether the Ollama server is reachable, with auto-retry when offline.
 final ollamaConnectionStatusProvider = FutureProvider<bool>((ref) async {
   final client = ref.watch(ollamaClientProvider);
-  return client.checkConnection();
+  ref.watch(ollamaServiceStatusProvider);
+  final isConnected = await client.checkConnection();
+
+  if (!isConnected) {
+    // Retry every 2.5 seconds while disconnected or while Ollama is starting up
+    final timer = Timer(const Duration(milliseconds: 2500), () {
+      ref.invalidateSelf();
+    });
+    ref.onDispose(timer.cancel);
+  }
+
+  return isConnected;
 });

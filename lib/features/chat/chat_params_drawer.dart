@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../database/database_provider.dart';
 import '../../shared/widgets/hover_icon_button.dart';
+import 'chat_context_bar.dart';
 import 'chat_providers.dart';
 
 /// Right-side slide-over panel for tuning system prompts and model inference parameters.
@@ -256,6 +257,11 @@ class _ChatParamsDrawerState extends ConsumerState<ChatParamsDrawer> {
                     onChanged: (val) => setState(() => _temperature = val),
                   ),
                 ),
+
+                const SizedBox(height: 16),
+
+                // Live Context Gauge Card
+                DrawerContextGauge(conversationId: widget.conversationId),
 
                 const SizedBox(height: 16),
 
